@@ -7,6 +7,7 @@ from app.repositories.user_repository import UserRepository
 from app.repositories.referral_repository import ReferralRepository
 from app.schemas.order import (
     OrderCreate,
+    PubgOrderCreate,
     OrderResponse,
     OrderCalculation,
     CreateOrderResponse,
@@ -14,17 +15,21 @@ from app.schemas.order import (
     PaymentProviderInfo,
     PaymentProvidersResponse,
 )
-from app.models.order import OrderStatus
+from app.models.order import OrderStatus, OrderType
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.services.yookassa_service import YooKassaService, YooKassaServiceError
 from app.services.steam_service import SteamTopupService
+from app.services.wata_service import WataService, WataServiceError
+from app.services.fazercards_service import FazerCardsService
 from app.services.email_service import EmailService
 
 logger = get_logger(__name__)
 
 
 class OrderService:
+    GUEST_EMAIL_SUFFIX = "@guest.gamecover.local"
+
     def __init__(self, db: AsyncSession):
         self.db = db
         self.order_repo = OrderRepository(db)
@@ -33,8 +38,20 @@ class OrderService:
         self.referral_repo = ReferralRepository(db)
         self.email_service = EmailService()
     
+    def get_commission_percent(self, amount: float) -> float:
+        if amount <= settings.COMMISSION_THRESHOLD_AMOUNT:
+            return settings.COMMISSION_PERCENT_UP_TO_THRESHOLD
+        return settings.COMMISSION_PERCENT_ABOVE_THRESHOLD
+
     def calculate_commission(self, amount: float) -> float:
-        return amount * (settings.COMMISSION_PERCENT / 100)
+        percent = self.get_commission_percent(amount)
+        return amount * (percent / 100)
+
+    def _resolve_order_email(self, data: OrderCreate) -> str:
+        if data.email:
+            return str(data.email)
+        # Technical fallback: Steam form no longer sends email.
+        return f"{data.steam_nickname.lower()}@xraytune.ru"
 
     def _resolve_order_payment_provider(self, order) -> PaymentProvider:
         steam_response = (order.steam_response or "").strip()
@@ -48,6 +65,14 @@ class OrderService:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="No payment providers are enabled",
         )
+
+    async def _should_send_order_email(self, user_id: Optional[int]) -> bool:
+        if not user_id:
+            return False
+        user = await self.user_repo.get_by_id(user_id)
+        if not user:
+            return False
+        return not user.email.endswith(self.GUEST_EMAIL_SUFFIX)
 
     def _build_return_urls(self, order_id: int) -> tuple[Optional[str], Optional[str], str]:
         frontend = (settings.FRONTEND_URL or "").rstrip("/")
@@ -78,20 +103,22 @@ class OrderService:
         promocode: Optional[str] = None,
         user_id: Optional[int] = None,
         use_referral_balance: bool = False,
+        skip_amount_limits: bool = False,
     ) -> OrderCalculation:
-        # Validate amount
-        if amount < settings.MIN_TOPUP_AMOUNT:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Minimum top-up amount is {settings.MIN_TOPUP_AMOUNT} RUB"
-            )
-        if amount > settings.MAX_TOPUP_AMOUNT:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Maximum top-up amount is {settings.MAX_TOPUP_AMOUNT} RUB"
-            )
+        if not skip_amount_limits:
+            if amount < settings.MIN_TOPUP_AMOUNT:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Minimum top-up amount is {settings.MIN_TOPUP_AMOUNT} RUB"
+                )
+            if amount > settings.MAX_TOPUP_AMOUNT:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Maximum top-up amount is {settings.MAX_TOPUP_AMOUNT} RUB"
+                )
         
-        commission = self.calculate_commission(amount)
+        commission_percent = self.get_commission_percent(amount)
+        commission = amount * (commission_percent / 100)
         discount_amount = 0.0
         
         # Apply promocode
@@ -113,7 +140,7 @@ class OrderService:
         return OrderCalculation(
             amount=amount,
             commission=commission,
-            commission_percent=settings.COMMISSION_PERCENT,
+            commission_percent=commission_percent,
             discount_amount=discount_amount,
             referral_discount=referral_discount,
             final_amount=max(final_amount, 0),
@@ -148,7 +175,7 @@ class OrderService:
             user_id=user_id,
             steam_nickname=data.steam_nickname,
             steam_profile_url=data.steam_profile_url,
-            email=data.email,
+            email=self._resolve_order_email(data),
             amount=calculation.amount,
             commission=calculation.commission,
             discount_amount=calculation.discount_amount,
@@ -281,13 +308,14 @@ class OrderService:
                 detail="Payment provider did not return payment URL",
             )
 
-        await self.email_service.send_order_created_email(
-            to_email=order.email,
-            order_id=order.id,
-            amount_rub=order.amount,
-            final_amount_rub=order.final_amount,
-            payment_url=payment_url,
-        )
+        if await self._should_send_order_email(order.user_id):
+            await self.email_service.send_order_created_email(
+                to_email=order.email,
+                order_id=order.id,
+                amount_rub=order.amount,
+                final_amount_rub=order.final_amount,
+                payment_url=payment_url,
+            )
 
         return CreateOrderResponse(
             order=order_response,
@@ -458,6 +486,171 @@ class OrderService:
         
         return False
     
+    async def create_pubg_order_with_payment_link(
+        self,
+        data: PubgOrderCreate,
+        user_id: Optional[int] = None,
+    ) -> CreateOrderResponse:
+        """Create a PUBG UC order in DB and generate a Wata H2H payment link."""
+
+        fazercards = FazerCardsService()
+        if not fazercards.is_configured():
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="FazerCards is not configured — PUBG orders unavailable",
+            )
+        if not fazercards.is_package_enabled(data.uc_amount):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"PUBG UC package {data.uc_amount} is not available",
+            )
+
+        packages = await fazercards.get_pubg_packages_with_prices()
+        pkg_info = next((p for p in packages if p["uc"] == data.uc_amount), None)
+        if not pkg_info or not pkg_info.get("price_rub"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot determine price for the selected PUBG UC package",
+            )
+
+        amount = float(pkg_info["price_rub"])
+        calculation = await self.calculate_order(
+            amount=amount,
+            promocode=data.promocode,
+            user_id=user_id,
+            use_referral_balance=data.use_referral_balance,
+            skip_amount_limits=True,
+        )
+
+        promocode_id = None
+        if data.promocode:
+            is_valid, _, promo = await self.promocode_repo.is_valid(data.promocode, amount)
+            if is_valid and promo:
+                promocode_id = promo.id
+
+        if data.use_referral_balance and user_id and calculation.referral_discount > 0:
+            await self.user_repo.deduct_referral_balance(user_id, calculation.referral_discount)
+
+        email = f"pubg_{data.uid}@xraytune.ru"
+
+        order = await self.order_repo.create(
+            user_id=user_id,
+            order_type=OrderType.PUBG,
+            steam_nickname=None,
+            steam_profile_url=None,
+            pubg_uid=data.uid,
+            pubg_uc_amount=data.uc_amount,
+            email=email,
+            amount=calculation.amount,
+            commission=calculation.commission,
+            discount_amount=calculation.discount_amount,
+            final_amount=calculation.final_amount,
+            promocode_id=promocode_id,
+        )
+
+        logger.info(
+            "PUBG order created",
+            order_id=order.id,
+            pubg_uid=data.uid,
+            uc_amount=data.uc_amount,
+            final_amount=order.final_amount,
+        )
+
+        order_response = OrderResponse.model_validate(order)
+
+        provider = data.payment_provider
+        providers = self.get_payment_providers()
+        if not any(p.id == provider and p.enabled for p in providers.providers):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Payment provider '{provider.value}' is disabled",
+            )
+
+        success_url, fail_url, return_url = self._build_return_urls(order.id)
+
+        payment_url = ""
+        if provider == PaymentProvider.WATA:
+            wata = WataService()
+            if not settings.WATA_ENABLED or not wata.is_configured():
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Wata payment provider is not configured",
+                )
+            try:
+                link = await wata.create_payment_link(
+                    amount=order.final_amount,
+                    currency="RUB",
+                    order_id=str(order.id),
+                    description=f"PUBG Mobile {data.uc_amount} UC",
+                    success_redirect_url=success_url,
+                    fail_redirect_url=fail_url,
+                )
+            except WataServiceError as e:
+                logger.error("Wata create PUBG payment failed", error=e.message, order_id=order.id)
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail=f"Payment link error: {e.message}",
+                )
+            payment_url = link.get("url") or ""
+            link_id = link.get("id") or ""
+            if payment_url:
+                order.steam_response = f"wata_h2h_link:{link_id}"
+                await self.db.commit()
+                await self.db.refresh(order)
+        elif provider == PaymentProvider.YOOKASSA:
+            yookassa = YooKassaService()
+            if not settings.YOOKASSA_ENABLED or not yookassa.is_configured():
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Payment provider (YooKassa) is not configured",
+                )
+            try:
+                payment = await yookassa.create_payment_link(
+                    amount=order.final_amount,
+                    currency="RUB",
+                    order_id=str(order.id),
+                    description=f"PUBG Mobile {data.uc_amount} UC",
+                    return_url=return_url,
+                )
+            except YooKassaServiceError as e:
+                logger.error("YooKassa create PUBG payment failed", error=e.message, order_id=order.id)
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail=f"Payment link error: {e.message}",
+                )
+            payment_url = (payment.get("confirmation") or {}).get("confirmation_url") or ""
+            payment_id = payment.get("id")
+            if payment_id:
+                order.steam_response = f"yookassa_payment_id:{payment_id}"
+                await self.db.commit()
+                await self.db.refresh(order)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported payment provider: {provider.value}",
+            )
+
+        if not payment_url:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Payment provider did not return payment URL",
+            )
+
+        if await self._should_send_order_email(order.user_id):
+            await self.email_service.send_order_created_email(
+                to_email=order.email,
+                order_id=order.id,
+                amount_rub=order.amount,
+                final_amount_rub=order.final_amount,
+                payment_url=payment_url,
+            )
+
+        return CreateOrderResponse(
+            order=order_response,
+            payment_url=payment_url,
+            payment_provider=provider,
+        )
+
     async def process_referral_reward(self, order_id: int) -> None:
         """Process referral reward after order completion"""
         order = await self.order_repo.get_by_id(order_id)

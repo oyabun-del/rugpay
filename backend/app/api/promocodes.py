@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.config import settings
 from app.core.database import get_db
 from app.repositories.promocode_repository import PromocodeRepository
+from app.services.order_service import OrderService
 from app.schemas.promocode import PromocodeApply, PromocodeApplyResponse
 
 router = APIRouter()
@@ -24,8 +24,9 @@ async def apply_promocode(
             message=message,
         )
     
-    # Calculate discount
-    commission = data.amount * (settings.COMMISSION_PERCENT / 100)
+    # Calculate discount using current commission rules.
+    order_service = OrderService(db)
+    commission = order_service.calculate_commission(data.amount)
     discount_amount = await repo.calculate_discount(promocode, data.amount, commission)
     
     return PromocodeApplyResponse(

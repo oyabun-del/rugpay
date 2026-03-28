@@ -8,6 +8,7 @@ celery_app = Celery(
     backend=settings.CELERY_RESULT_BACKEND,
     include=[
         "app.tasks.steam_tasks",
+        "app.tasks.pubg_tasks",
         "app.tasks.referral_tasks",
         "app.tasks.stats_tasks",
         "app.tasks.guest_tasks",

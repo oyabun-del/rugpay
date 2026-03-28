@@ -49,7 +49,10 @@ export interface User {
 
 export interface Order {
   id: number;
-  steam_nickname: string;
+  order_type?: 'steam' | 'pubg';
+  steam_nickname?: string;
+  pubg_uid?: string;
+  pubg_uc_amount?: number;
   amount: number;
   commission: number;
   final_amount: number;
@@ -124,14 +127,13 @@ export interface PubgPackagesResponse {
   packages: PubgPackage[];
 }
 
-export interface PubgGiftOrderResponse {
-  status: string;
-  provider_order_id: string;
-  amount_charged?: number;
-  currency?: string;
-  created_at?: string;
-  message?: string;
-  payload?: Record<string, unknown>;
+export interface CreatePubgOrderResponse {
+  order: Order;
+  payment_url: string;
+  payment_provider: PaymentProvider;
+  guest_access_token?: string;
+  guest_expires_at?: string;
+  guest_user?: User;
 }
 
 export interface BannerSlide {
@@ -165,7 +167,7 @@ export const ordersApi = {
     steam_nickname: string;
     steam_profile_url?: string;
     amount: number;
-    email: string;
+    email?: string;
     promocode?: string;
     use_referral_balance?: boolean;
     referral_code?: string;
@@ -183,7 +185,7 @@ export const ordersApi = {
     steam_nickname: string;
     steam_profile_url?: string;
     amount: number;
-    email: string;
+    email?: string;
     promocode?: string;
     use_referral_balance?: boolean;
     referral_code?: string;
@@ -210,10 +212,13 @@ export const ordersApi = {
 // Payment page: public order info (no auth)
 export interface PaymentOrderInfo {
   id: number;
+  order_type?: string;
   status: string;
   amount: number;
   final_amount: number;
-  steam_nickname: string;
+  steam_nickname?: string;
+  pubg_uid?: string;
+  pubg_uc_amount?: number;
   email: string;
 }
 
@@ -232,8 +237,24 @@ export const paymentsApi = {
 
 export const pubgApi = {
   getPackages: () => api.get<PubgPackagesResponse>('/pubg/packages'),
-  createOrder: (data: { uid: string; uc_amount: number; promocode?: string }) =>
-    api.post<PubgGiftOrderResponse>('/pubg/create', data),
+
+  createOrder: (data: {
+    uid: string;
+    uc_amount: number;
+    promocode?: string;
+    use_referral_balance?: boolean;
+    referral_code?: string;
+    payment_provider?: PaymentProvider;
+  }) => api.post<CreatePubgOrderResponse>('/pubg/create', data),
+
+  createOrderAuth: (data: {
+    uid: string;
+    uc_amount: number;
+    promocode?: string;
+    use_referral_balance?: boolean;
+    referral_code?: string;
+    payment_provider?: PaymentProvider;
+  }) => api.post<CreatePubgOrderResponse>('/pubg/create/auth', data),
 };
 
 export const bannerApi = {

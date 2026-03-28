@@ -77,11 +77,32 @@ export function TopupForm() {
   }, []);
 
   const numAmount = parseFloat(amount) || 0;
-  const commissionRate = 0.08;
+  const commissionRate = numAmount <= 1000 ? 0.11 : 0.1;
+  const commissionPercentLabel = numAmount <= 1000 ? 11 : 10;
   const commission = numAmount * commissionRate * (1 - promoDiscount);
   const finalAmount = numAmount + commission;
   const steamLoginRegex = /^[A-Za-z0-9]{2,32}$/;
   const pubgUidRegex = /^\d{5,20}$/;
+  const extractApiErrorMessage = (err: unknown, fallback: string): string => {
+    if (
+      err &&
+      typeof err === 'object' &&
+      'response' in err &&
+      (err as { response?: { data?: { detail?: unknown } } }).response?.data
+    ) {
+      const detail = (err as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+      if (typeof detail === 'string') {
+        return detail;
+      }
+      if (Array.isArray(detail)) {
+        const first = detail[0] as { msg?: string } | undefined;
+        if (first?.msg) {
+          return first.msg;
+        }
+      }
+    }
+    return fallback;
+  };
   const emphasizedInputClass =
     'bg-background/90 border-2 border-primary/35 font-semibold placeholder:font-medium placeholder:text-muted-foreground/80 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30';
 
@@ -144,25 +165,33 @@ export function TopupForm() {
 
       setIsLoading(true);
       try {
-        const { data } = await pubgApi.createOrder({
+        const referralCode = typeof window !== 'undefined' ? localStorage.getItem('referral_code') : null;
+        const payload = {
           uid,
           uc_amount: selectedPubgUc,
           promocode: promocode.trim() || undefined,
-        });
+          referral_code: referralCode || undefined,
+        };
 
-        const codeCount = Array.isArray(data.payload?.codes) ? data.payload.codes.length : 0;
-        toast({
-          title: 'Заказ создан',
-          description:
-          codeCount > 0
-            ? `Заказ создан: ${data.provider_order_id}. Получено кодов: ${codeCount}.`
-            : `Заказ создан: ${data.provider_order_id}. Статус: ${data.status}.`,
-          duration: 4000,
-        });
+        const { data } =
+          typeof window !== 'undefined' && localStorage.getItem('token')
+            ? await pubgApi.createOrderAuth(payload)
+            : await pubgApi.createOrder(payload);
+
+        if (data.guest_access_token) {
+          await setSession(data.guest_access_token, data.guest_user ?? null);
+        }
+
+        if (data.payment_url) {
+          window.location.href = data.payment_url;
+          return;
+        }
+        router.push(`/payment/${data.order.id}`);
       } catch (err: unknown) {
-        const msg = err && typeof err === 'object' && 'response' in err && typeof (err as { response?: { data?: { detail?: string } } }).response?.data?.detail === 'string'
-          ? (err as { response: { data: { detail: string } } }).response.data.detail
-          : 'Не удалось создать PUBG заказ. Проверьте настройки FazerCards.';
+        const msg = extractApiErrorMessage(
+          err,
+          'Не удалось создать PUBG заказ. Попробуйте еще раз.',
+        );
         toast({
           variant: 'destructive',
           title: 'Ошибка',
@@ -209,18 +238,18 @@ export function TopupForm() {
 
     try {
       const referralCode = typeof window !== 'undefined' ? localStorage.getItem('referral_code') : null;
-      const fallbackEmail = `${steamLogin.toLowerCase()}@gamecover.local`;
       const payload = {
         steam_nickname: steamLogin,
         steam_profile_url: undefined,
         amount: numAmount,
-        email: fallbackEmail,
         promocode: promocode.trim() || undefined,
         referral_code: referralCode || undefined,
       };
 
-      const createOrder = typeof window !== 'undefined' && localStorage.getItem('token') ? ordersApi.createAuth : ordersApi.create;
-      const { data } = await createOrder(payload);
+      const { data } =
+        typeof window !== 'undefined' && localStorage.getItem('token')
+          ? await ordersApi.createAuth(payload)
+          : await ordersApi.create(payload);
 
       if (data.guest_access_token) {
         await setSession(data.guest_access_token, data.guest_user ?? null);
@@ -232,9 +261,7 @@ export function TopupForm() {
       }
       router.push(`/payment/${data.order.id}`);
     } catch (err: unknown) {
-      const msg = err && typeof err === 'object' && 'response' in err && typeof (err as { response?: { data?: { detail?: string } } }).response?.data?.detail === 'string'
-        ? (err as { response: { data: { detail: string } } }).response.data.detail
-        : 'Не удалось создать заказ. Попробуйте еще раз.';
+      const msg = extractApiErrorMessage(err, 'Не удалось создать заказ. Попробуйте еще раз.');
       toast({
         variant: 'destructive',
         title: 'Ошибка',
@@ -492,7 +519,7 @@ export function TopupForm() {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  Комиссия (8%)
+                  Комиссия 
                   {promoDiscount > 0 && (
                     <span className="text-green-500 ml-1">
                       -{Math.round(promoDiscount * 100)}%

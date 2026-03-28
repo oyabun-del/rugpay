@@ -15,33 +15,50 @@ class OrderStatus(str, enum.Enum):
     REFUNDED = "refunded"
 
 
+class OrderType(str, enum.Enum):
+    STEAM = "steam"
+    PUBG = "pubg"
+
+
 class Order(Base):
     __tablename__ = "orders"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Optional for guest orders
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    order_type = Column(
+        SQLEnum(OrderType, values_callable=lambda obj: [e.value for e in obj]),
+        default=OrderType.STEAM,
+        nullable=False,
+        server_default="steam",
+    )
     
-    # Steam info
-    steam_nickname = Column(String(255), nullable=False)
+    # Steam info (nullable for PUBG orders)
+    steam_nickname = Column(String(255), nullable=True)
     steam_profile_url = Column(String(512), nullable=True)
+    
+    # PUBG info (nullable for Steam orders)
+    pubg_uid = Column(String(20), nullable=True)
+    pubg_uc_amount = Column(Integer, nullable=True)
+    pubg_fazercards_order_id = Column(String(255), nullable=True)
+    pubg_gift_codes = Column(String(2048), nullable=True)
     
     # Order details
     email = Column(String(255), nullable=False)
-    amount = Column(Float, nullable=False)  # Top-up amount
-    commission = Column(Float, nullable=False)  # Commission amount
-    final_amount = Column(Float, nullable=False)  # Total to pay
+    amount = Column(Float, nullable=False)
+    commission = Column(Float, nullable=False)
+    final_amount = Column(Float, nullable=False)
     
     # Promo code
     promocode_id = Column(Integer, ForeignKey("promocodes.id"), nullable=True)
     discount_amount = Column(Float, default=0.0)
     
     # Referral
-    referral_reward = Column(Float, default=0.0)  # Reward given to referrer
+    referral_reward = Column(Float, default=0.0)
     
     # Status
     status = Column(SQLEnum(OrderStatus), default=OrderStatus.PENDING)
     
-    # Steam API response
+    # Payment / provider response
     steam_transaction_id = Column(String(255), nullable=True)
     steam_response = Column(String(2048), nullable=True)
     

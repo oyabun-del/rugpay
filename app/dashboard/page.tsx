@@ -194,7 +194,11 @@ export default function DashboardPage() {
                   className="flex items-center justify-between p-4 rounded-lg bg-secondary/30"
                 >
                   <div className="space-y-1">
-                    <p className="font-medium">{order.steam_nickname}</p>
+                    <p className="font-medium">
+                      {order.order_type === 'pubg'
+                        ? `PUBG UID: ${order.pubg_uid || '—'}`
+                        : order.steam_nickname || '—'}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {new Date(order.created_at).toLocaleDateString('ru-RU', {
                         day: 'numeric',

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User } from 'lucide-react';
+import { Menu, X, User, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { usePathname, useRouter } from 'next/navigation';
@@ -50,12 +50,6 @@ export function Header() {
           <BrandLogo />
 
           <nav className="hidden md:flex items-center gap-6">
-            <a
-              href="mailto:gamecover@xraytune.ru"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Техподдержка: gamecover@xraytune.ru
-            </a>
             <Link
               href="/#topup"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -99,6 +93,14 @@ export function Header() {
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
+            <a
+              href="mailto:gamecover@xraytune.ru"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Написать в техподдержку"
+            >
+              <Mail className="h-4 w-4" />
+              <span>gamecover@xraytune.ru</span>
+            </a>
             {isAuthenticated ? (
               <>
                 <Button variant="ghost" onClick={onLogout}>Выйти</Button>

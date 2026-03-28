@@ -1,7 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, EmailStr
 from typing import Optional, List
 from datetime import datetime
-from app.models.order import OrderStatus
+from app.models.order import OrderStatus, OrderType
 from app.schemas.auth import UserResponse
 import enum
 import re
@@ -15,18 +15,17 @@ class PaymentProvider(str, enum.Enum):
 class OrderCreate(BaseModel):
     steam_nickname: str = Field(..., min_length=2, max_length=255)
     steam_profile_url: Optional[str] = None
-    email: EmailStr
+    email: Optional[EmailStr] = None
     amount: float = Field(..., gt=0)
     promocode: Optional[str] = None
     use_referral_balance: bool = False
-    referral_code: Optional[str] = None  # Referral code of inviter
+    referral_code: Optional[str] = None
     payment_provider: PaymentProvider = PaymentProvider.WATA
     
     @field_validator("steam_nickname")
     @classmethod
     def validate_steam_nickname(cls, v: str) -> str:
         value = v.strip()
-        # Steam login only: english letters and digits, no punctuation.
         if not re.match(r"^[A-Za-z0-9]{2,32}$", value):
             raise ValueError(
                 "Steam login must contain only English letters and digits (2-32 chars)"
@@ -43,9 +42,37 @@ class OrderCreate(BaseModel):
         return v.strip()
 
 
+class PubgOrderCreate(BaseModel):
+    uid: str = Field(..., min_length=5, max_length=20)
+    uc_amount: int = Field(..., description="UC package amount")
+    promocode: Optional[str] = None
+    use_referral_balance: bool = False
+    referral_code: Optional[str] = None
+    payment_provider: PaymentProvider = PaymentProvider.WATA
+
+    @field_validator("uid")
+    @classmethod
+    def validate_uid(cls, v: str) -> str:
+        value = v.strip()
+        if not value.isdigit():
+            raise ValueError("UID must contain only digits")
+        return value
+
+    @field_validator("uc_amount")
+    @classmethod
+    def validate_uc_amount(cls, v: int) -> int:
+        allowed = {60, 325, 660, 1800, 3850, 8100}
+        if v not in allowed:
+            raise ValueError("Unsupported PUBG UC package")
+        return v
+
+
 class OrderResponse(BaseModel):
     id: int
-    steam_nickname: str
+    order_type: str = "steam"
+    steam_nickname: Optional[str] = None
+    pubg_uid: Optional[str] = None
+    pubg_uc_amount: Optional[int] = None
     email: str
     amount: float
     commission: float

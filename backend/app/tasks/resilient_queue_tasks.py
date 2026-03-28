@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.core.logging import get_logger
-from app.models.order import Order
+from app.models.order import Order, OrderType
 from app.models.referral import Referral
 from app.models.transaction import Transaction
 from app.models.user import User
@@ -92,9 +92,9 @@ def drain_resilient_payment_queue(max_items: int = 100) -> dict:
             processed_ok = run_async(
                 _process_payment_event_async(order_id, payment_status, payment_provider_id)
             )
-            # If payment was confirmed, enqueue top-up processing.
             if processed_ok and payment_status == "completed":
-                queue.enqueue(QUEUE_ORDERS, {"kind": "steam_topup", "order_id": order_id})
+                order_kind = _resolve_order_kind(order_id)
+                queue.enqueue(QUEUE_ORDERS, {"kind": order_kind, "order_id": order_id})
             processed += 1
         except Exception as e:
             attempts = int(payload.get("attempts", 0)) + 1
@@ -105,6 +105,18 @@ def drain_resilient_payment_queue(max_items: int = 100) -> dict:
             logger.warning("Resilient payment queue item failed", error=str(e), payload=payload)
 
     return {"processed": processed, "failed": failed, "remaining": queue.size(QUEUE_PAYMENTS)}
+
+
+def _resolve_order_kind(order_id: int) -> str:
+    """Look up order_type from DB to determine kind for resilient queue."""
+    session = SyncSession()
+    try:
+        order = session.query(Order).filter(Order.id == order_id).first()
+        if order and order.order_type == OrderType.PUBG:
+            return "pubg_topup"
+        return "steam_topup"
+    finally:
+        session.close()
 
 
 @shared_task
@@ -119,13 +131,15 @@ def drain_resilient_order_queue(max_items: int = 100) -> dict:
             break
         try:
             kind = str(payload.get("kind") or "")
-            if kind != "steam_topup":
-                processed += 1
-                continue
             order_id = int(payload["order_id"])
-            from app.tasks.steam_tasks import process_steam_topup
-
-            process_steam_topup.delay(order_id)
+            if kind == "pubg_topup":
+                from app.tasks.pubg_tasks import process_pubg_topup
+                process_pubg_topup.delay(order_id)
+            elif kind == "steam_topup":
+                from app.tasks.steam_tasks import process_steam_topup
+                process_steam_topup.delay(order_id)
+            else:
+                logger.warning("Unknown order queue kind, skipping", kind=kind, order_id=order_id)
             processed += 1
         except Exception as e:
             attempts = int(payload.get("attempts", 0)) + 1

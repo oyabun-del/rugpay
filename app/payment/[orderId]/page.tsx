@@ -148,10 +148,11 @@ export default function PaymentPage({
     failed: 2,
   };
   const currentStep = statusStepIndex[status];
+  const isPubg = order.order_type === 'pubg';
   const flowSteps = [
     'Ожидание оплаты',
     'Оплата получена',
-    'Пополнение Steam',
+    isPubg ? 'Покупка PUBG UC' : 'Пополнение Steam',
     'Выполнено',
   ];
 
@@ -254,12 +255,27 @@ export default function PaymentPage({
 
             {/* Order details */}
             <div className="space-y-3 rounded-lg bg-secondary/30 p-4">
+              {isPubg ? (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">PUBG UID</span>
+                    <span className="font-medium">{order.pubg_uid}</span>
+                  </div>
+                  {order.pubg_uc_amount && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Пакет</span>
+                      <span className="font-medium">{order.pubg_uc_amount} UC</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Steam-аккаунт</span>
+                  <span className="font-medium">{order.steam_nickname}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Steam-аккаунт</span>
-                <span className="font-medium">{order.steam_nickname}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Сумма пополнения</span>
+                <span className="text-muted-foreground">Сумма</span>
                 <span>{order.amount.toLocaleString()} RUB</span>
               </div>
               <div className="border-t border-border pt-3 flex justify-between font-semibold">
@@ -274,10 +290,12 @@ export default function PaymentPage({
             {status === 'completed' && (
               <div className="text-center p-4 rounded-lg bg-green-500/10 border border-green-500/20">
                 <p className="text-green-500 font-medium">
-                  Баланс Steam успешно пополнен!
+                  {isPubg ? 'PUBG UC успешно приобретены!' : 'Баланс Steam успешно пополнен!'}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Средства уже доступны в вашем Steam-кошельке.
+                  {isPubg
+                    ? 'Гифт-карта UC отправлена на указанный UID.'
+                    : 'Средства уже доступны в вашем Steam-кошельке.'}
                 </p>
               </div>
             )}

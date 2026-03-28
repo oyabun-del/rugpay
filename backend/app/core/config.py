@@ -102,7 +102,11 @@ class Settings(BaseSettings):
     FAZERCARDS_PUBG_PRODUCT_ID_8100: Optional[str] = None
     
     # Commission
-    COMMISSION_PERCENT: float = 8.0  # 8% commission
+    COMMISSION_THRESHOLD_AMOUNT: float = 1000.0  # RUB
+    COMMISSION_PERCENT_UP_TO_THRESHOLD: float = 11.0  # <= threshold
+    COMMISSION_PERCENT_ABOVE_THRESHOLD: float = 10.0  # > threshold
+    # Legacy fallback (unused in new tiered logic, kept for compatibility)
+    COMMISSION_PERCENT: float = 8.0
     MIN_TOPUP_AMOUNT: float = 100.0  # Minimum amount in RUB
     MAX_TOPUP_AMOUNT: float = 50000.0  # Maximum amount in RUB
     

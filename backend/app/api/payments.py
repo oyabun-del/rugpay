@@ -8,7 +8,8 @@ import hashlib
 from app.core.database import get_db
 from app.core.config import settings
 from app.services.order_service import OrderService
-from app.models.order import OrderStatus
+from app.repositories.order_repository import OrderRepository
+from app.models.order import OrderStatus, OrderType
 from app.services.wata_service import WataService
 from app.services.yookassa_service import YooKassaService
 from app.core.logging import get_logger
@@ -51,12 +52,29 @@ def _enqueue_payment_fallback(order_id: int, payment_status: str, payment_provid
         )
 
 
-def _enqueue_order_fallback(order_id: int) -> None:
+def _enqueue_order_fallback(order_id: int, kind: str = "steam_topup") -> None:
     try:
         queue = ResilientQueueService()
-        queue.enqueue(QUEUE_ORDERS, {"kind": "steam_topup", "order_id": int(order_id)})
+        queue.enqueue(QUEUE_ORDERS, {"kind": kind, "order_id": int(order_id)})
     except Exception as e:
         logger.error("Failed to enqueue order fallback", order_id=order_id, error=str(e))
+
+
+def _dispatch_topup_task(order_id: int, order_type: str) -> None:
+    """Dispatch the correct Celery task based on order type, with resilient queue fallback."""
+    kind = "pubg_topup" if order_type == OrderType.PUBG else "steam_topup"
+    try:
+        if order_type == OrderType.PUBG:
+            from app.tasks.pubg_tasks import process_pubg_topup
+            process_pubg_topup.delay(order_id)
+            logger.info("PUBG top-up task queued", order_id=order_id)
+        else:
+            from app.tasks.steam_tasks import process_steam_topup
+            process_steam_topup.delay(order_id)
+            logger.info("Steam top-up task queued", order_id=order_id)
+    except Exception as e:
+        logger.warning("Celery top-up enqueue failed, queued fallback", order_id=order_id, error=str(e))
+        _enqueue_order_fallback(order_id, kind)
 
 
 def verify_webhook_signature_hmac(
@@ -168,13 +186,10 @@ async def payment_webhook(
             _enqueue_payment_fallback(order_id, payment_status, provider_id)
             return {"status": "queued"}
         if success and payment_status == "completed":
-            try:
-                from app.tasks.steam_tasks import process_steam_topup
-                process_steam_topup.delay(order_id)
-                logger.info("Steam top-up task queued", order_id=order_id)
-            except Exception as e:
-                logger.warning("Celery top-up enqueue failed, queued fallback", order_id=order_id, error=str(e))
-                _enqueue_order_fallback(order_id)
+            repo = OrderRepository(db)
+            order_obj = await repo.get_by_id(order_id)
+            order_type = order_obj.order_type if order_obj else OrderType.STEAM
+            _dispatch_topup_task(order_id, order_type)
         return {"status": "ok"}
 
     # YooKassa webhook (no signature header from provider by default).
@@ -231,13 +246,10 @@ async def payment_webhook(
             _enqueue_payment_fallback(order_id, payment_status, provider_id)
             return {"status": "queued"}
         if success and payment_status == "completed":
-            try:
-                from app.tasks.steam_tasks import process_steam_topup
-                process_steam_topup.delay(order_id)
-                logger.info("Steam top-up task queued", order_id=order_id)
-            except Exception as e:
-                logger.warning("Celery top-up enqueue failed, queued fallback", order_id=order_id, error=str(e))
-                _enqueue_order_fallback(order_id)
+            repo = OrderRepository(db)
+            order_obj = await repo.get_by_id(order_id)
+            order_type = order_obj.order_type if order_obj else OrderType.STEAM
+            _dispatch_topup_task(order_id, order_type)
         return {"status": "ok"}
 
     # Legacy HMAC webhook (no X-Signature → require legacy secret + header)
@@ -297,13 +309,10 @@ async def payment_webhook(
         _enqueue_payment_fallback(numeric_order_id, payment_status or "", provider_id)
         return {"status": "queued"}
     if success and payment_status == "completed":
-        try:
-            from app.tasks.steam_tasks import process_steam_topup
-            process_steam_topup.delay(numeric_order_id)
-            logger.info("Steam top-up task queued", order_id=numeric_order_id)
-        except Exception as e:
-            logger.warning("Celery top-up enqueue failed, queued fallback", order_id=numeric_order_id, error=str(e))
-            _enqueue_order_fallback(numeric_order_id)
+        repo = OrderRepository(db)
+        order_obj = await repo.get_by_id(numeric_order_id)
+        order_type = order_obj.order_type if order_obj else OrderType.STEAM
+        _dispatch_topup_task(numeric_order_id, order_type)
 
     return {"status": "ok"}
 
@@ -317,15 +326,17 @@ async def get_order_for_payment_page(
     Public endpoint: minimal order info for payment/return page (no auth).
     Returns id, status, amount, final_amount, steam_nickname, email for display.
     """
-    from app.repositories.order_repository import OrderRepository
     from pydantic import BaseModel
 
     class PaymentOrderInfo(BaseModel):
         id: int
+        order_type: str = "steam"
         status: str
         amount: float
         final_amount: float
-        steam_nickname: str
+        steam_nickname: Optional[str] = None
+        pubg_uid: Optional[str] = None
+        pubg_uc_amount: Optional[int] = None
         email: str
 
     repo = OrderRepository(db)
@@ -336,8 +347,7 @@ async def get_order_for_payment_page(
             detail="Order not found",
         )
 
-    # Fallback sync with Wata sandbox/prod transaction API for local dev
-    # when webhook is not publicly accessible.
+    # Fallback sync with Wata transaction API (covers both Steam DG and PUBG H2H).
     if settings.WATA_ENABLED and order.status in [OrderStatus.PENDING, OrderStatus.PAID, OrderStatus.PROCESSING]:
         wata = WataService()
         tx = await wata.get_transaction_by_order_id(str(order.id))
@@ -348,23 +358,13 @@ async def get_order_for_payment_page(
             if tx_status == "Paid":
                 success = await service.process_payment_webhook(order.id, "completed", tx_id)
                 if success:
-                    try:
-                        from app.tasks.steam_tasks import process_steam_topup
-                        process_steam_topup.delay(order.id)
-                        logger.info("Steam top-up task queued from fallback sync", order_id=order.id)
-                    except Exception as e:
-                        logger.warning(
-                            "Celery not available (fallback sync), queued fallback",
-                            order_id=order.id,
-                            error=str(e),
-                        )
-                        _enqueue_order_fallback(order.id)
+                    _dispatch_topup_task(order.id, order.order_type)
                 order = await repo.get_by_id(order_id)
             elif tx_status == "Declined":
                 await service.process_payment_webhook(order.id, "failed", tx_id)
                 order = await repo.get_by_id(order_id)
 
-    # Fallback sync with YooKassa when webhook is not publicly accessible.
+    # Fallback sync with YooKassa.
     if settings.YOOKASSA_ENABLED and order.status in [OrderStatus.PENDING]:
         yookassa_payment_id = _extract_yookassa_payment_id(order)
         if yookassa_payment_id:
@@ -375,29 +375,21 @@ async def get_order_for_payment_page(
                 service = OrderService(db)
                 if yk_status == "succeeded":
                     success = await service.process_payment_webhook(
-                        order.id,
-                        "completed",
-                        yookassa_payment_id,
+                        order.id, "completed", yookassa_payment_id,
                     )
                     if success:
-                        try:
-                            from app.tasks.steam_tasks import process_steam_topup
-                            process_steam_topup.delay(order.id)
-                            logger.info("Steam top-up task queued from YooKassa fallback sync", order_id=order.id)
-                        except Exception as e:
-                            logger.warning(
-                                "Celery not available (YooKassa fallback sync), queued fallback",
-                                order_id=order.id,
-                                error=str(e),
-                            )
-                            _enqueue_order_fallback(order.id)
+                        _dispatch_topup_task(order.id, order.order_type)
                     order = await repo.get_by_id(order_id)
                 elif yk_status == "canceled":
                     await service.process_payment_webhook(order.id, "failed", yookassa_payment_id)
                     order = await repo.get_by_id(order_id)
 
-    # Sync with Wata Steam order status while payment/top-up is in progress.
-    if settings.WATA_STEAM_TOPUP_ENABLED and order.status in [OrderStatus.PENDING, OrderStatus.PAID, OrderStatus.PROCESSING]:
+    # Sync with Wata Steam DG order status (Steam orders only).
+    if (
+        order.order_type == OrderType.STEAM
+        and settings.WATA_STEAM_TOPUP_ENABLED
+        and order.status in [OrderStatus.PENDING, OrderStatus.PAID, OrderStatus.PROCESSING]
+    ):
         from app.services.steam_service import SteamTopupService
 
         steam = SteamTopupService()
@@ -405,20 +397,10 @@ async def get_order_for_payment_page(
 
         if topup_status == "completed":
             service = OrderService(db)
-            # Ensure promo usage and transition PENDING -> PAID happen through common flow.
             if order.status == OrderStatus.PENDING:
                 processed = await service.process_payment_webhook(order.id, "completed", f"wata-steam-{order.id}")
                 if processed:
-                    try:
-                        from app.tasks.steam_tasks import process_steam_topup
-                        process_steam_topup.delay(order.id)
-                    except Exception as e:
-                        logger.warning(
-                            "Celery not available (Wata Steam sync), queued fallback",
-                            order_id=order.id,
-                            error=str(e),
-                        )
-                        _enqueue_order_fallback(order.id)
+                    _dispatch_topup_task(order.id, order.order_type)
             else:
                 await repo.update_status(order.id, OrderStatus.COMPLETED)
                 order = await repo.get_by_id(order_id)
@@ -434,34 +416,21 @@ async def get_order_for_payment_page(
                 await db.commit()
                 await db.refresh(order)
         else:
-            # Provider confirms payment accepted, but fulfillment is still running.
             if "processing" in topup_message.lower() and order.status == OrderStatus.PENDING:
                 service = OrderService(db)
                 processed = await service.process_payment_webhook(order.id, "completed", f"wata-steam-{order.id}")
                 if processed:
-                    try:
-                        from app.tasks.steam_tasks import process_steam_topup
-                        process_steam_topup.delay(order.id)
-                    except Exception as e:
-                        logger.warning(
-                            "Celery not available (Wata Steam pending sync), queued fallback",
-                            order_id=order.id,
-                            error=str(e),
-                        )
-                        _enqueue_order_fallback(order.id)
-
-    # Legacy PlayWallet sync was disabled in favor of Wata Steam API.
-    # if order.status == OrderStatus.PROCESSING and order.steam_transaction_id:
-    #     from app.services.steam_service import SteamTopupService
-    #     steam = SteamTopupService()
-    #     topup_status, topup_message = await steam.check_topup_status(order.steam_transaction_id)
+                    _dispatch_topup_task(order.id, order.order_type)
 
     return PaymentOrderInfo(
         id=order.id,
+        order_type=order.order_type.value if order.order_type else "steam",
         status=order.status.value,
         amount=order.amount,
         final_amount=order.final_amount,
         steam_nickname=order.steam_nickname,
+        pubg_uid=order.pubg_uid,
+        pubg_uc_amount=order.pubg_uc_amount,
         email=order.email,
     )
 

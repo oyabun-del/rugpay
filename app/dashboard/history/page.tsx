@@ -96,7 +96,9 @@ export default function HistoryPage() {
                         })}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {order.steam_nickname}
+                        {order.order_type === 'pubg'
+                          ? `PUBG: ${order.pubg_uid || '—'}`
+                          : order.steam_nickname || '—'}
                       </TableCell>
                       <TableCell className="text-right">
                         {order.amount.toLocaleString()} RUB

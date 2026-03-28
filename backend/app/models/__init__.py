@@ -1,5 +1,5 @@
 from .user import User
-from .order import Order, OrderStatus
+from .order import Order, OrderStatus, OrderType
 from .transaction import Transaction, PaymentStatus
 from .promocode import Promocode, DiscountType
 from .referral import Referral
@@ -10,6 +10,7 @@ __all__ = [
     "User",
     "Order",
     "OrderStatus",
+    "OrderType",
     "Transaction",
     "PaymentStatus",
     "Promocode",

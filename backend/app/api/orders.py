@@ -21,6 +21,12 @@ from app.schemas.auth import UserResponse
 router = APIRouter()
 
 
+def _resolve_order_email(data: OrderCreate) -> str:
+    if data.email:
+        return str(data.email)
+    return f"{data.steam_nickname.lower()}@xraytune.ru"
+
+
 @router.post("/calculate", response_model=OrderCalculation)
 async def calculate_order(
     amount: float = Query(..., gt=0),
@@ -94,9 +100,10 @@ async def create_order(
             )
 
     antifraud = AntifraudService(db)
+    email_for_checks = _resolve_order_email(data)
     await antifraud.perform_checks(
         steam_nickname=data.steam_nickname,
-        email=data.email,
+        email=email_for_checks,
         amount=data.amount,
         user_id=user_id,
         ip_address=ip_address,
@@ -122,9 +129,10 @@ async def create_order_authenticated(
     ip_address = request.client.host if request.client else None
 
     antifraud = AntifraudService(db)
+    email_for_checks = _resolve_order_email(data)
     await antifraud.perform_checks(
         steam_nickname=data.steam_nickname,
-        email=data.email,
+        email=email_for_checks,
         amount=data.amount,
         user_id=user_id,
         ip_address=ip_address,

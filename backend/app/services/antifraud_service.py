@@ -65,8 +65,11 @@ class AntifraudService:
         
         return True, "Valid"
     
-    def validate_email(self, email: str) -> tuple[bool, str]:
+    def validate_email(self, email: Optional[str]) -> tuple[bool, str]:
         """Additional email validation"""
+        if not email:
+            return True, "Skipped"
+
         # Check for disposable email domains
         disposable_domains = [
             "tempmail.com",
@@ -101,10 +104,11 @@ class AntifraudService:
     async def perform_checks(
         self,
         steam_nickname: str,
-        email: str,
+        email: Optional[str],
         amount: float,
         user_id: Optional[int] = None,
         ip_address: Optional[str] = None,
+        skip_amount_check: bool = False,
     ) -> None:
         """Perform all anti-fraud checks"""
         
@@ -131,13 +135,14 @@ class AntifraudService:
                 detail=message
             )
         
-        # Amount validation
-        valid, message = self.validate_amount(amount)
-        if not valid:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=message
-            )
+        # Amount validation (skipped for PUBG orders where price is resolved later)
+        if not skip_amount_check:
+            valid, message = self.validate_amount(amount)
+            if not valid:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=message
+                )
         
         logger.info(
             "Anti-fraud checks passed",
