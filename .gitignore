@@ -1,0 +1,29 @@
+# v0 runtime files
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+
+# Common ignores
+node_modules/
+.next/
+.turbo/
+dist/
+build/
+.coverage
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env*.local
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
