@@ -36,7 +36,7 @@ export function GamesSection() {
                       src={game.image}
                       alt={game.name}
                       fill
-                      className={`object-cover transition-all duration-300 ${game.comingSoon ? 'grayscale blur-[1.5px]' : ''}`}
+                      className={`object-cover transition-all duration-300 ${game.comingSoon ? 'grayscale' : ''}`}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                     {game.comingSoon && (

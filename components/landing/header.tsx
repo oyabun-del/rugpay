@@ -52,13 +52,13 @@ export function Header() {
           <nav className="hidden md:flex items-center gap-6">
             <Link
               href="/#topup"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="relative inline-flex items-center justify-center overflow-hidden rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all duration-300 hover:bg-primary/90 before:absolute before:inset-0 before:bg-primary before:opacity-50 before:animate-pulse before:[animation-duration:2.2s]"
               onClick={(e) => {
                 e.preventDefault();
                 smoothScrollToAnchor('/#topup');
               }}
             >
-              Пополнить
+              <span className="relative z-10">Пополнить</span>
             </Link>
             <Link
               href="#features"
@@ -148,14 +148,14 @@ export function Header() {
               </a>
               <Link
                 href="/#topup"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="relative inline-flex items-center justify-center overflow-hidden rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all duration-300 hover:bg-primary/90 before:absolute before:inset-0 before:bg-primary before:opacity-50 before:animate-pulse before:[animation-duration:2.2s]"
                 onClick={(e) => {
                   e.preventDefault();
                   setMobileMenuOpen(false);
                   smoothScrollToAnchor('/#topup');
                 }}
               >
-                Пополнить
+                  <span className="relative z-10">Пополнить</span>
               </Link>
               <Link
                 href="#features"
