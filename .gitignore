@@ -27,3 +27,6 @@ logs/
 # IDE
 .vscode/
 .idea/
+
+nginx/ssl/*
+!nginx/ssl/.gitkeep
