@@ -99,6 +99,8 @@ class Settings(BaseSettings):
     COMMISSION_THRESHOLD_AMOUNT: float = 1000.0  # RUB
     COMMISSION_PERCENT_UP_TO_THRESHOLD: float = 11.0  # <= threshold
     COMMISSION_PERCENT_ABOVE_THRESHOLD: float = 10.0  # > threshold
+    STEAM_DISCOUNT_PERCENT: float = 0.0  # extra discount on final amount
+    PUBG_DISCOUNT_PERCENT: float = 0.0  # extra discount on final amount
     MIN_TOPUP_AMOUNT: float = 100.0  # Minimum amount in RUB
     MAX_TOPUP_AMOUNT: float = 50000.0  # Maximum amount in RUB
     

@@ -16,9 +16,15 @@ import { useToast } from '@/hooks/use-toast';
 
 const PUBG_PRICE_REFRESH_MS = 5 * 60 * 1000;
 const DEFAULT_PUBG_PACKAGES: PubgPackage[] = [];
-const DISCOUNT_PERCENT = Number(process.env.NEXT_PUBLIC_DISCOUNT_PERCENT ?? 0);
-const DISCOUNT_MULTIPLIER = 1 - DISCOUNT_PERCENT / 100;
 type FormMode = 'steam' | 'pubg';
+
+const DEFAULT_PRICING_CONFIG = {
+  commission_threshold_amount: 1000,
+  commission_percent_up_to_threshold: 11,
+  commission_percent_above_threshold: 10,
+  steam_discount_percent: 0,
+  pubg_discount_percent: 0,
+};
 
 export function TopupForm() {
   const router = useRouter();
@@ -31,6 +37,7 @@ export function TopupForm() {
   const [pubgUid, setPubgUid] = useState('');
   const [pubgPackages, setPubgPackages] = useState<PubgPackage[]>(DEFAULT_PUBG_PACKAGES);
   const [selectedPubgUc, setSelectedPubgUc] = useState<number | null>(null);
+  const [pricingConfig, setPricingConfig] = useState(DEFAULT_PRICING_CONFIG);
 
   const [promocode, setPromocode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -51,6 +58,18 @@ export function TopupForm() {
       setFormMode(game);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const loadPricingConfig = async () => {
+      try {
+        const { data } = await ordersApi.getPricingConfig();
+        setPricingConfig(data);
+      } catch {
+        // Keep defaults if pricing config endpoint is temporarily unavailable.
+      }
+    };
+    void loadPricingConfig();
+  }, []);
 
   useEffect(() => {
     const loadPubgPackages = async () => {
@@ -79,10 +98,17 @@ export function TopupForm() {
   }, []);
 
   const numAmount = parseFloat(amount) || 0;
-  const commissionRate = numAmount <= 1000 ? 0.11 : 0.1;
-  const commissionPercentLabel = numAmount <= 1000 ? 11 : 10;
+  const commissionPercentLabel =
+    numAmount <= pricingConfig.commission_threshold_amount
+      ? pricingConfig.commission_percent_up_to_threshold
+      : pricingConfig.commission_percent_above_threshold;
+  const commissionRate = commissionPercentLabel / 100;
   const commission = numAmount * commissionRate * (1 - promoDiscount);
   const finalAmount = numAmount + commission;
+  const steamDiscountPercent = Math.max(pricingConfig.steam_discount_percent, 0);
+  const pubgDiscountPercent = Math.max(pricingConfig.pubg_discount_percent, 0);
+  const steamDiscountMultiplier = 1 - steamDiscountPercent / 100;
+  const pubgDiscountMultiplier = 1 - pubgDiscountPercent / 100;
   const steamLoginRegex = /^[A-Za-z0-9]{2,32}$/;
   const pubgUidRegex = /^\d{5,20}$/;
   const extractApiErrorMessage = (err: unknown, fallback: string): string => {
@@ -456,8 +482,10 @@ export function TopupForm() {
                                 {pkg.price_rub} RUB
                               </span>
                               <span className="text-sm text-primary font-semibold">
-                                {Math.round(pkg.price_rub * DISCOUNT_MULTIPLIER)} RUB
-                                <span className="ml-1 text-xs text-green-500 font-medium">-5%</span>
+                                {Math.round(pkg.price_rub * pubgDiscountMultiplier)} RUB
+                                {pubgDiscountPercent > 0 && (
+                                  <span className="ml-1 text-xs text-green-500 font-medium">-{pubgDiscountPercent}%</span>
+                                )}
                               </span>
                             </div>
                           ) : (
@@ -539,9 +567,11 @@ export function TopupForm() {
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground flex items-center gap-1">
                   Скидка
-                  <span className="text-green-500 font-medium">-5%</span>
+                  {steamDiscountPercent > 0 && (
+                    <span className="text-green-500 font-medium">-{steamDiscountPercent}%</span>
+                  )}
                 </span>
-                <span className="text-green-500">-{(finalAmount * (DISCOUNT_PERCENT / 100)).toFixed(2)} RUB</span>
+                <span className="text-green-500">-{(finalAmount * (steamDiscountPercent / 100)).toFixed(2)} RUB</span>
               </div>
               <div className="border-t border-border pt-2 flex justify-between font-semibold">
                 <span>Итого</span>
@@ -549,7 +579,7 @@ export function TopupForm() {
                   <span className="text-xs text-muted-foreground line-through font-normal">
                     {finalAmount.toFixed(2)} RUB
                   </span>
-                  <span className="text-primary">{(finalAmount * DISCOUNT_MULTIPLIER).toFixed(2)} RUB</span>
+                  <span className="text-primary">{(finalAmount * steamDiscountMultiplier).toFixed(2)} RUB</span>
                 </div>
               </div>
             </div>

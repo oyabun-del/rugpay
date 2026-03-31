@@ -113,6 +113,24 @@ export interface PaymentProvidersResponse {
   default_provider: PaymentProvider | null;
 }
 
+export interface OrderPricingConfig {
+  commission_threshold_amount: number;
+  commission_percent_up_to_threshold: number;
+  commission_percent_above_threshold: number;
+  steam_discount_percent: number;
+  pubg_discount_percent: number;
+}
+
+export interface OrderCalculation {
+  amount: number;
+  commission: number;
+  commission_percent: number;
+  form_discount_percent: number;
+  discount_amount: number;
+  referral_discount: number;
+  final_amount: number;
+}
+
 export interface PubgPackage {
   uc: number;
   label: string;
@@ -203,8 +221,10 @@ export const ordersApi = {
 
   getById: (id: number) => api.get<Order>(`/orders/${id}`),
 
-  calculate: (data: { amount: number; promocode?: string }) =>
-    api.post<{ commission: number; final_amount: number; discount: number }>('/orders/calculate', data),
+  calculate: (params: { amount: number; order_type?: 'steam' | 'pubg'; promocode?: string }) =>
+    api.post<OrderCalculation>('/orders/calculate', null, { params }),
+
+  getPricingConfig: () => api.get<OrderPricingConfig>('/orders/pricing-config'),
 
   getPaymentProviders: () => api.get<PaymentProvidersResponse>('/orders/payment-providers'),
 };

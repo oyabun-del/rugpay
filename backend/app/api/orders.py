@@ -15,7 +15,9 @@ from app.schemas.order import (
     OrderCalculation,
     CreateOrderResponse,
     PaymentProvidersResponse,
+    OrderPricingConfig,
 )
+from app.models.order import OrderType
 from app.schemas.auth import UserResponse
 
 router = APIRouter()
@@ -24,12 +26,25 @@ router = APIRouter()
 @router.post("/calculate", response_model=OrderCalculation)
 async def calculate_order(
     amount: float = Query(..., gt=0),
+    order_type: OrderType = Query(OrderType.STEAM),
     promocode: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
 ):
     """Calculate order total with commission and discounts"""
     service = OrderService(db)
-    return await service.calculate_order(amount=amount, promocode=promocode)
+    return await service.calculate_order(amount=amount, order_type=order_type, promocode=promocode)
+
+
+@router.get("/pricing-config", response_model=OrderPricingConfig)
+async def get_order_pricing_config():
+    """Get current commission and per-form discount settings."""
+    return OrderPricingConfig(
+        commission_threshold_amount=settings.COMMISSION_THRESHOLD_AMOUNT,
+        commission_percent_up_to_threshold=settings.COMMISSION_PERCENT_UP_TO_THRESHOLD,
+        commission_percent_above_threshold=settings.COMMISSION_PERCENT_ABOVE_THRESHOLD,
+        steam_discount_percent=settings.STEAM_DISCOUNT_PERCENT,
+        pubg_discount_percent=settings.PUBG_DISCOUNT_PERCENT,
+    )
 
 
 @router.post("/create", response_model=CreateOrderResponse)

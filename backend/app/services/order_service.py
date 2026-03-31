@@ -46,6 +46,12 @@ class OrderService:
         return amount * (percent / 100)
 
     @staticmethod
+    def get_form_discount_percent(order_type: OrderType) -> float:
+        if order_type == OrderType.PUBG:
+            return float(settings.PUBG_DISCOUNT_PERCENT)
+        return float(settings.STEAM_DISCOUNT_PERCENT)
+
+    @staticmethod
     def _resolve_order_email(data: OrderCreate) -> str:
         if data.email:
             return str(data.email)
@@ -207,6 +213,7 @@ class OrderService:
     async def calculate_order(
         self,
         amount: float,
+        order_type: OrderType = OrderType.STEAM,
         promocode: Optional[str] = None,
         user_id: Optional[int] = None,
         use_referral_balance: bool = False,
@@ -241,14 +248,19 @@ class OrderService:
             if user and user.referral_balance > 0:
                 # Use referral balance to reduce final amount
                 referral_discount = min(user.referral_balance, amount + commission - discount_amount)
-        
-        final_amount = amount + commission - discount_amount - referral_discount
+
+        subtotal = amount + commission - discount_amount - referral_discount
+        form_discount_percent = max(self.get_form_discount_percent(order_type), 0.0)
+        form_discount_amount = subtotal * (form_discount_percent / 100)
+        total_discount_amount = discount_amount + form_discount_amount
+        final_amount = subtotal - form_discount_amount
         
         return OrderCalculation(
             amount=amount,
             commission=commission,
             commission_percent=commission_percent,
-            discount_amount=discount_amount,
+            form_discount_percent=form_discount_percent,
+            discount_amount=total_discount_amount,
             referral_discount=referral_discount,
             final_amount=max(final_amount, 0),
         )
@@ -261,6 +273,7 @@ class OrderService:
         # Calculate order
         calculation = await self.calculate_order(
             amount=data.amount,
+            order_type=OrderType.STEAM,
             promocode=data.promocode,
             user_id=user_id,
             use_referral_balance=data.use_referral_balance,
@@ -512,6 +525,7 @@ class OrderService:
         amount = float(pkg_info["price_rub"])
         calculation = await self.calculate_order(
             amount=amount,
+            order_type=OrderType.PUBG,
             promocode=data.promocode,
             user_id=user_id,
             use_referral_balance=data.use_referral_balance,

@@ -122,6 +122,15 @@ class OrderCalculation(BaseModel):
     amount: float
     commission: float
     commission_percent: float
+    form_discount_percent: float
     discount_amount: float
     referral_discount: float
     final_amount: float
+
+
+class OrderPricingConfig(BaseModel):
+    commission_threshold_amount: float
+    commission_percent_up_to_threshold: float
+    commission_percent_above_threshold: float
+    steam_discount_percent: float
+    pubg_discount_percent: float
