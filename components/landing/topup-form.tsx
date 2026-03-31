@@ -16,6 +16,8 @@ import { useToast } from '@/hooks/use-toast';
 
 const PUBG_PRICE_REFRESH_MS = 5 * 60 * 1000;
 const DEFAULT_PUBG_PACKAGES: PubgPackage[] = [];
+const DISCOUNT_PERCENT = Number(process.env.NEXT_PUBLIC_DISCOUNT_PERCENT ?? 0);
+const DISCOUNT_MULTIPLIER = 1 - DISCOUNT_PERCENT / 100;
 type FormMode = 'steam' | 'pubg';
 
 export function TopupForm() {
@@ -449,9 +451,15 @@ export function TopupForm() {
                         <div className="flex flex-col">
                           <span className="text-base font-semibold">{pkg.label}</span>
                           {pkg.price_rub ? (
-                            <span className="text-sm text-primary font-semibold">
-                              {pkg.price_rub} RUB
-                            </span>
+                            <div className="flex flex-col">
+                              <span className="text-xs text-muted-foreground line-through">
+                                {pkg.price_rub} RUB
+                              </span>
+                              <span className="text-sm text-primary font-semibold">
+                                {Math.round(pkg.price_rub * DISCOUNT_MULTIPLIER)} RUB
+                                <span className="ml-1 text-xs text-green-500 font-medium">-5%</span>
+                              </span>
+                            </div>
                           ) : (
                             <span className="text-sm text-muted-foreground">Цена обновляется...</span>
                           )}
@@ -528,9 +536,21 @@ export function TopupForm() {
                 </span>
                 <span>{commission.toFixed(2)} RUB</span>
               </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground flex items-center gap-1">
+                  Скидка
+                  <span className="text-green-500 font-medium">-5%</span>
+                </span>
+                <span className="text-green-500">-{(finalAmount * (DISCOUNT_PERCENT / 100)).toFixed(2)} RUB</span>
+              </div>
               <div className="border-t border-border pt-2 flex justify-between font-semibold">
                 <span>Итого</span>
-                <span className="text-primary">{finalAmount.toFixed(2)} RUB</span>
+                <div className="flex flex-col items-end">
+                  <span className="text-xs text-muted-foreground line-through font-normal">
+                    {finalAmount.toFixed(2)} RUB
+                  </span>
+                  <span className="text-primary">{(finalAmount * DISCOUNT_MULTIPLIER).toFixed(2)} RUB</span>
+                </div>
               </div>
             </div>
           )}
