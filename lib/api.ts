@@ -22,15 +22,28 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+const GUEST_EMAIL_SUFFIX = '@guest.gamecover.local';
+
 // Handle auth errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('user');
+        const isGuest = storedUser
+          ? (() => {
+              try {
+                return JSON.parse(storedUser)?.email?.endsWith(GUEST_EMAIL_SUFFIX) ?? false;
+              } catch {
+                return false;
+              }
+            })()
+          : false;
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        // Guest sessions expire silently — redirect home, not to login page
+        window.location.href = isGuest ? '/' : '/login';
       }
     }
     return Promise.reject(error);

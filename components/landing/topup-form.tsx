@@ -457,7 +457,7 @@ export function TopupForm() {
                       type="button"
                       onClick={() => pkg.enabled && setSelectedPubgUc(pkg.uc)}
                       disabled={!pkg.enabled}
-                      className={`relative min-h-[84px] rounded-lg border p-3 pr-10 text-left transition ${
+                      className={`relative min-h-[96px] rounded-lg border p-3.5 pr-10 text-left transition ${
                         selectedPubgUc === pkg.uc
                           ? 'border-primary bg-primary/10'
                           : 'border-border bg-background/40'
@@ -472,27 +472,26 @@ export function TopupForm() {
                           alt={pkg.label}
                           width={56}
                           height={56}
-                          className="h-14 w-14 rounded-md object-cover"
+                          className="h-16 w-16 rounded-md object-cover flex-shrink-0"
                         />
-                        <div className="flex flex-col">
-                          <span className="text-base font-semibold">{pkg.label}</span>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xl font-extrabold leading-tight"
+                            style={{ color: '#FFD700', textShadow: '0 1px 6px rgba(255,215,0,0.35)' }}>
+                            {pkg.uc} UC
+                          </span>
                           {pkg.price_rub ? (
-                            <div className="flex flex-col">
-                              <span className="text-xs text-muted-foreground line-through">
-                                {pkg.price_rub} RUB
-                              </span>
+                            <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
                               <span className="text-sm text-primary font-semibold">
-                                {Math.round(pkg.price_rub * pubgDiscountMultiplier)} RUB
-                                {pubgDiscountPercent > 0 && (
-                                  <span className="ml-1 text-xs text-green-500 font-medium">-{pubgDiscountPercent}%</span>
-                                )}
+                                {Math.round(pkg.price_rub * pubgDiscountMultiplier)} ₽
+                              </span>
+                              <span className="text-xs text-muted-foreground line-through">
+                                {pkg.price_rub} ₽
                               </span>
                             </div>
+                          ) : pkg.enabled ? (
+                            <span className="text-xs text-muted-foreground">Цена обновляется...</span>
                           ) : (
-                            <span className="text-sm text-muted-foreground">Цена обновляется...</span>
-                          )}
-                          {!pkg.enabled && (
-                            <span className="text-sm text-muted-foreground">Скоро</span>
+                            <span className="text-xs text-muted-foreground">Скоро</span>
                           )}
                         </div>
                       </div>
@@ -579,7 +578,7 @@ export function TopupForm() {
                   <span className="text-xs text-muted-foreground line-through font-normal">
                     {finalAmount.toFixed(2)} RUB
                   </span>
-                  <span className="text-primary">{(finalAmount * steamDiscountMultiplier).toFixed(2)} RUB</span>
+                  <span className="text-primary text-lg">{(finalAmount * steamDiscountMultiplier).toFixed(2)} RUB</span>
                 </div>
               </div>
             </div>
