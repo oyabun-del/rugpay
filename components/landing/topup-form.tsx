@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,8 @@ export function TopupForm() {
   const searchParams = useSearchParams();
   const { setSession } = useAuth();
   const [formMode, setFormMode] = useState<FormMode>('steam');
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [highlight, setHighlight] = useState(false);
 
   const [steamNickname, setSteamNickname] = useState('');
   const [amount, setAmount] = useState('');
@@ -44,6 +46,40 @@ export function TopupForm() {
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoDiscount, setPromoDiscount] = useState(0);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const flash = () => {
+      setHighlight(false);
+      // Force reflow so re-adding the class restarts the animation
+      void cardRef.current?.offsetWidth;
+      setHighlight(true);
+      setTimeout(() => setHighlight(false), 2200);
+    };
+
+    // Flash on initial load if hash is #topup
+    if (window.location.hash === '#topup') {
+      flash();
+    }
+
+    // Listen for clicks on any anchor pointing to #topup
+    const onClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('a[href*="#topup"]');
+      if (target) {
+        setTimeout(flash, 300);
+      }
+    };
+
+    document.addEventListener('click', onClick, true);
+    window.addEventListener('hashchange', () => {
+      if (window.location.hash === '#topup') flash();
+    });
+
+    return () => {
+      document.removeEventListener('click', onClick, true);
+    };
+  }, []);
 
   useEffect(() => {
     const ref = searchParams.get('ref');
@@ -302,7 +338,7 @@ export function TopupForm() {
   };
 
   return (
-    <Card className="w-full max-w-[31rem] h-auto lg:h-[620px] border-border/50 bg-card/80 shadow-lg backdrop-blur-sm">
+    <Card ref={cardRef} className={`w-full max-w-[31rem] h-auto lg:min-h-[620px] border-border/50 bg-card/80 shadow-lg backdrop-blur-sm rounded-2xl ${highlight ? 'animate-form-highlight' : ''}`}>
       <CardHeader className="space-y-1">
         <div className="grid grid-cols-2 gap-2 pb-2">
           <Button
@@ -546,22 +582,11 @@ export function TopupForm() {
             )}
           </div>
 
-          {formMode === 'steam' && (
+          {formMode === 'steam' && numAmount > 0 && (
             <div className="rounded-lg bg-secondary/50 p-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Сумма пополнения</span>
                 <span>{numAmount.toFixed(2)} RUB</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  Комиссия 
-                  {promoDiscount > 0 && (
-                    <span className="text-green-500 ml-1">
-                      -{Math.round(promoDiscount * 100)}%
-                    </span>
-                  )}
-                </span>
-                <span>{commission.toFixed(2)} RUB</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground flex items-center gap-1">
@@ -600,7 +625,12 @@ export function TopupForm() {
             )}
           </Button>
 
-          
+          <p className="text-[10px] text-muted-foreground text-center leading-tight mt-2">
+            Нажимая &laquo;{formMode === 'steam' ? 'Перейти к оплате' : 'Купить PUBG Gift'}&raquo;, вы принимаете{' '}
+            <a href="/privacy" className="underline hover:text-foreground transition-colors">Политику конфиденциальности</a>{' '}
+            и{' '}
+            <a href="/terms" className="underline hover:text-foreground transition-colors">Публичную оферту</a>.
+          </p>
         </form>
       </CardContent>
     </Card>

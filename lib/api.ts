@@ -173,6 +173,8 @@ export interface BannerSlide {
   image_url: string;
   sort_order: number;
   is_active: boolean;
+  button_text?: string;
+  button_link?: string;
 }
 
 // Auth API
