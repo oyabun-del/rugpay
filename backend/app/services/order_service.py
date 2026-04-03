@@ -106,10 +106,11 @@ class OrderService:
                 steam_nickname=order.steam_nickname,
                 net_amount=order.amount,
             )
-            import math
-            # Add 1% buffer above minPrice to avoid rounding rejections
-            safe_min_price = math.ceil(min_price * 1.01 * 100) / 100
-            wata_amount = max(order.final_amount, safe_min_price)
+            # Wata constraint: minPrice <= amount <= minPrice * 1.5
+            wata_amount = max(order.final_amount, min_price)
+            # Cap at upper bound just in case
+            max_allowed = round(min_price * 1.5, 2)
+            wata_amount = min(wata_amount, max_allowed)
 
             # Update order final_amount if Wata minPrice is higher
             if wata_amount > order.final_amount:
