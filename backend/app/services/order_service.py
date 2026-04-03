@@ -101,10 +101,29 @@ class OrderService:
                 detail="Wata Steam top-up provider is not configured",
             )
         try:
+            # Wata requires amount >= minPrice; fetch quote first
+            _, min_price = await steam_topup.get_topup_quote(
+                steam_nickname=order.steam_nickname,
+                net_amount=order.amount,
+            )
+            wata_amount = max(order.final_amount, min_price)
+
+            # Update order final_amount if Wata minPrice is higher
+            if wata_amount > order.final_amount:
+                logger.info(
+                    "Adjusting final_amount to Wata minPrice",
+                    order_id=order.id,
+                    old_amount=order.final_amount,
+                    min_price=min_price,
+                )
+                order.final_amount = round(wata_amount, 2)
+                await self.db.commit()
+                await self.db.refresh(order)
+
             provider_order = await steam_topup.create_topup_order(
                 order_id=order.id,
                 steam_nickname=order.steam_nickname,
-                amount=order.final_amount,
+                amount=wata_amount,
                 net_amount=order.amount,
                 description=description,
                 success_redirect_url=success_url,
