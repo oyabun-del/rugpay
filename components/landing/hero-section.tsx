@@ -79,7 +79,7 @@ export function HeroSection() {
         <div className="grid lg:grid-cols-[1.45fr_0.75fr] gap-6 md:gap-8 lg:gap-[45px] items-center">
           {/* Mobile banner — 45vh */}
           <div className="block lg:hidden w-full">
-            <div className="relative h-[45vh] overflow-hidden rounded-2xl border border-border/50 bg-card/70">
+            <div className="relative h-[28vh] overflow-hidden rounded-2xl border border-border/50 bg-card/70">
               {currentSlide ? (
                 slides.map((slide, idx) => (
                   <Image
@@ -87,7 +87,7 @@ export function HeroSection() {
                     src={slide.image_url}
                     alt={slide.title}
                     fill
-                    className={`object-contain transition-opacity duration-1000 ease-in-out ${
+                    className={`object-cover transition-opacity duration-1000 ease-in-out ${
                       idx === activeIndex ? 'opacity-100' : 'opacity-0'
                     }`}
                     priority={idx === 0}

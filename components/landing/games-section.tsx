@@ -31,12 +31,12 @@ export function GamesSection() {
                 className="border-border/50 overflow-hidden group py-0 gap-0 hover:border-primary/50 transition-all duration-300"
               >
                 <CardContent className="p-0">
-                  <div className="relative aspect-[4/3]">
+                  <div className="relative aspect-[3/4]">
                     <Image
                       src={game.image}
                       alt={game.name}
                       fill
-                      className={`object-contain transition-all duration-300 ${game.comingSoon ? 'grayscale' : ''}`}
+                      className={`object-cover transition-all duration-300 ${game.comingSoon ? 'grayscale' : ''}`}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                     {game.comingSoon && (
