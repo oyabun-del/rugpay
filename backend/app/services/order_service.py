@@ -101,23 +101,24 @@ class OrderService:
                 detail="Wata Steam top-up provider is not configured",
             )
         try:
-            # Fetch Wata quote: price = total user pays, min_price = lower bound
-            price, min_price = await steam_topup.get_topup_quote(
+            # Fetch Wata quote:
+            #   price    = acquisition cost (what Wata pays Steam, NOT what user pays)
+            #   minPrice = minimum resale price (minimum amount to charge user)
+            # Wata constraint: minPrice <= amount <= minPrice * 1.5
+            _, min_price = await steam_topup.get_topup_quote(
                 steam_nickname=order.steam_nickname,
                 net_amount=order.amount,
             )
-            # Use Wata's own calculated price so their terminal has positive revenue.
-            # Wata constraint: minPrice <= amount <= minPrice * 1.5
             max_allowed = round(min_price * 1.5, 2)
-            wata_amount = round(min(max(price, min_price), max_allowed), 2)
+            # Use our final_amount if above minPrice, otherwise use minPrice
+            wata_amount = round(min(max(order.final_amount, min_price), max_allowed), 2)
 
-            # Update order final_amount to match what user will actually be charged
+            # Update order final_amount if adjusted
             if wata_amount != order.final_amount:
                 logger.info(
-                    "Adjusting final_amount to Wata price",
+                    "Adjusting final_amount to Wata minPrice",
                     order_id=order.id,
                     old_amount=order.final_amount,
-                    wata_price=price,
                     min_price=min_price,
                     wata_amount=wata_amount,
                 )
