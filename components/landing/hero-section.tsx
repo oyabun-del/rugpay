@@ -75,8 +75,8 @@ export function HeroSection() {
         <div className="absolute bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-primary/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid lg:grid-cols-[1.45fr_0.75fr] gap-6 md:gap-8 lg:gap-[45px] items-center">
+      <div className="container mx-auto px-4 py-12 3xl:max-w-[1800px] 4xl:max-w-[2400px]">
+        <div className="grid lg:grid-cols-[1.45fr_0.75fr] gap-6 md:gap-8 lg:gap-[45px] 3xl:gap-[60px] items-center">
           {/* Mobile banner — 45vh */}
           <div className="block lg:hidden w-full">
             <div className="relative h-[28vh] overflow-hidden rounded-2xl border border-border/50 bg-card/70">
@@ -130,7 +130,7 @@ export function HeroSection() {
 
           {/* Desktop banner */}
           <div className="hidden lg:block w-full">
-            <div className="relative h-[620px] overflow-hidden rounded-2xl border border-border/50 bg-card/70">
+            <div className="relative h-[620px] 3xl:h-[780px] 4xl:h-[1000px] overflow-hidden rounded-2xl border border-border/50 bg-card/70">
               {currentSlide ? (
                 slides.map((slide, idx) => (
                   <Image
@@ -148,10 +148,10 @@ export function HeroSection() {
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-background/40 to-background/80" />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
-              <div className="absolute bottom-0 w-full p-6 md:p-8 text-center lg:text-left">
+              <div className="absolute bottom-0 w-full p-6 md:p-8 3xl:p-10 text-center lg:text-left">
                 <h1
                   key={currentSlide?.id || 'fallback'}
-                  className="animate-fade-in text-3xl md:text-4xl lg:text-5xl font-bold leading-tight text-white drop-shadow-sm"
+                  className="animate-fade-in text-3xl md:text-4xl lg:text-5xl 3xl:text-6xl 4xl:text-7xl font-bold leading-tight text-white drop-shadow-sm"
                 >
                   {currentSlide?.title || 'Пополняй баланс Steam и PUBG Mobile'}
                 </h1>
@@ -180,7 +180,7 @@ export function HeroSection() {
           </div>
 
           <div className="flex justify-center lg:justify-end">
-            <Suspense fallback={<div className="w-full max-w-[31rem] h-[620px] bg-card/50 rounded-lg animate-pulse" />}>
+            <Suspense fallback={<div className="w-full max-w-[31rem] 3xl:max-w-[38rem] 4xl:max-w-[48rem] h-[620px] 3xl:h-[780px] 4xl:h-[1000px] bg-card/50 rounded-lg animate-pulse" />}>
               <TopupForm />
             </Suspense>
           </div>

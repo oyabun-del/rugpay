@@ -83,7 +83,7 @@ class OrderService:
         frontend = (settings.FRONTEND_URL or "").rstrip("/")
         success_url = f"{frontend}/payment/{order_id}?status=success" if frontend else None
         fail_url = f"{frontend}/payment/{order_id}?status=fail" if frontend else None
-        return_url = success_url or (settings.FRONTEND_URL or "http://localhost:3000")
+        return_url = success_url or (settings.FRONTEND_URL or "https://rugpay.ru")
         return success_url, fail_url, return_url
 
     async def _create_wata_steam_payment_url(
@@ -369,7 +369,7 @@ class OrderService:
         frontend = (settings.FRONTEND_URL or "").rstrip("/")
         success_url = f"{frontend}/payment/{order.id}?status=success" if frontend else None
         fail_url = f"{frontend}/payment/{order.id}?status=fail" if frontend else None
-        return_url = success_url or (settings.FRONTEND_URL or "http://localhost:3000")
+        return_url = success_url or (settings.FRONTEND_URL or "https://rugpay.ru")
 
         description = f"Steam top-up {order.amount} RUB"
         if provider == PaymentProvider.WATA:

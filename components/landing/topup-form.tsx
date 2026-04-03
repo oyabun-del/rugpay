@@ -338,7 +338,7 @@ export function TopupForm() {
   };
 
   return (
-    <Card ref={cardRef} className={`w-full max-w-[31rem] h-auto lg:min-h-[620px] border-border/50 bg-card/80 shadow-lg backdrop-blur-sm rounded-2xl ${highlight ? 'animate-form-highlight' : ''}`}>
+    <Card ref={cardRef} className={`w-full max-w-[31rem] 3xl:max-w-[38rem] 4xl:max-w-[48rem] h-auto lg:min-h-[620px] 3xl:min-h-[780px] 4xl:min-h-[1000px] border-border/50 bg-card/80 shadow-lg backdrop-blur-sm rounded-2xl ${highlight ? 'animate-form-highlight' : ''}`}>
       <CardHeader className="space-y-1">
         <div className="grid grid-cols-2 gap-2 pb-2">
           <Button

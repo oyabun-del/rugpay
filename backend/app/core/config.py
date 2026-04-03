@@ -73,7 +73,7 @@ class Settings(BaseSettings):
     WATA_ACCESS_TOKEN: Optional[str] = None
     WATA_TERMINAL_PUBLIC_ID: Optional[str] = None  # terminalPublicId for redirects (optional)
     WATA_USE_SANDBOX: bool = True  # Use sandbox (api-sandbox.wata.pro) when True
-    FRONTEND_URL: str = "http://localhost:3000"  # For success/fail redirect URLs
+    FRONTEND_URL: str = "https://rugpay.ru"  # For success/fail redirect URLs
     
     # YooKassa payment provider (https://yookassa.ru/developers/api#payment)
     YOOKASSA_ENABLED: bool = False

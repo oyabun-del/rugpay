@@ -93,7 +93,7 @@ class EmailService:
             heading="Добро пожаловать в SteamPay",
             message="Вы успешно зарегистрировались в SteamPay. Теперь вы можете отслеживать заказы в личном кабинете.",
             action_text="Открыть сайт",
-            action_url=(settings.FRONTEND_URL or "").rstrip("/") or "http://localhost:3000",
+            action_url=(settings.FRONTEND_URL or "").rstrip("/") or "https://rugpay.ru",
             footer_note="Спасибо, что выбрали наш сервис.",
         )
         await self.send_email(to_email, subject, body, html)
@@ -146,7 +146,7 @@ class EmailService:
             status=status_text,
             details=details or "Без дополнительных деталей",
             action_text="Открыть сайт",
-            action_url=(settings.FRONTEND_URL or "").rstrip("/") or "http://localhost:3000",
+            action_url=(settings.FRONTEND_URL or "").rstrip("/") or "https://rugpay.ru",
             footer_note="Если у вас есть вопросы, ответьте на это письмо.",
         )
         await self.send_email(to_email, subject, body, html)

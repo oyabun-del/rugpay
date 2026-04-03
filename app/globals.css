@@ -1,6 +1,12 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* Custom breakpoints for 2K and 4K displays */
+@theme inline {
+  --breakpoint-3xl: 2560px;
+  --breakpoint-4xl: 3840px;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -134,6 +140,20 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Scale up for 2K displays (≥2560px viewport) */
+@media (min-width: 2560px) {
+  html {
+    font-size: 20px;
+  }
+}
+
+/* Scale up for 4K displays (≥3840px viewport) */
+@media (min-width: 3840px) {
+  html {
+    font-size: 28px;
   }
 }
 
