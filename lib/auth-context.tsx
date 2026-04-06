@@ -86,14 +86,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshUser]);
 
   const login = async (email: string, password: string) => {
-    const response = await authApi.login({ email, password });
-    const { access_token, user: userData } = response.data;
-    
-    setToken(access_token);
-    setUser(userData);
-    localStorage.setItem('token', access_token);
-    localStorage.setItem('user', JSON.stringify(userData));
-    clearGuestCookies();
+    try {
+      const response = await authApi.login({ email, password });
+      const { access_token, user: userData } = response.data;
+      setToken(access_token);
+      setUser(userData);
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      clearGuestCookies();
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        throw new Error('Неверный email или пароль');
+      }
+      throw new Error('Ошибка входа. Попробуйте позже');
+    }
   };
 
   const register = async (email: string, password: string, referralCode?: string) => {

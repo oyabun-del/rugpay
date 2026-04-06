@@ -80,9 +80,9 @@ class EmailService:
             logger.error("Email send failed", to_email=to_email, subject=subject, error=str(e))
 
     async def send_welcome_email(self, to_email: str) -> None:
-        subject = "Добро пожаловать в SteamPay"
+        subject = "Добро пожаловать в RugPay"
         body = (
-            "Вы успешно зарегистрировались в SteamPay.\n\n"
+            "Вы успешно зарегистрировались в RugPay.\n\n"
             "Теперь вы можете отслеживать заказы в личном кабинете.\n"
             "Спасибо, что выбрали наш сервис."
         )
@@ -90,8 +90,8 @@ class EmailService:
             "welcome.html",
             title=subject,
             preheader="Регистрация завершена",
-            heading="Добро пожаловать в SteamPay",
-            message="Вы успешно зарегистрировались в SteamPay. Теперь вы можете отслеживать заказы в личном кабинете.",
+            heading="Добро пожаловать в RugPay",
+            message="Вы успешно зарегистрировались в RugPay. Теперь вы можете отслеживать заказы в личном кабинете.",
             action_text="Открыть сайт",
             action_url=(settings.FRONTEND_URL or "").rstrip("/") or "https://rugpay.ru",
             footer_note="Спасибо, что выбрали наш сервис.",
@@ -106,7 +106,7 @@ class EmailService:
         final_amount_rub: float,
         payment_url: str,
     ) -> None:
-        subject = f"Новый заказ SteamPay #{order_id}"
+        subject = f"Новый заказ RugPay #{order_id}"
         body = (
             f"Ваш заказ #{order_id} создан.\n\n"
             f"Сумма пополнения: {amount_rub:.2f} RUB\n"
@@ -134,7 +134,7 @@ class EmailService:
         status_text: str,
         details: Optional[str] = None,
     ) -> None:
-        subject = f"Статус заказа SteamPay #{order_id}: {status_text}"
+        subject = f"Статус заказа RugPay #{order_id}: {status_text}"
         body = f"Статус вашего заказа #{order_id}: {status_text}\n"
         if details:
             body += f"\nДетали: {details}\n"
@@ -156,7 +156,7 @@ class EmailService:
         to_email: str,
         reset_url: str,
     ) -> None:
-        subject = "Восстановление пароля SteamPay"
+        subject = "Восстановление пароля RugPay"
         body = (
             "Вы запросили восстановление пароля.\n\n"
             f"Перейдите по ссылке, чтобы задать новый пароль:\n{reset_url}\n\n"
