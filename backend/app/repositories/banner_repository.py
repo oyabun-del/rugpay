@@ -40,8 +40,15 @@ class BannerRepository:
         if not slide:
             return None
         for key, value in kwargs.items():
-            if value is not None:
-                setattr(slide, key, value)
+            setattr(slide, key, value)
         await self.db.commit()
         await self.db.refresh(slide)
         return slide
+
+    async def delete(self, slide_id: int) -> bool:
+        slide = await self.get_by_id(slide_id)
+        if not slide:
+            return False
+        await self.db.delete(slide)
+        await self.db.commit()
+        return True

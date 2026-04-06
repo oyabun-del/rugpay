@@ -173,8 +173,8 @@ export interface BannerSlide {
   image_url: string;
   sort_order: number;
   is_active: boolean;
-  button_text?: string;
-  button_link?: string;
+  button_text?: string | null;
+  button_link?: string | null;
 }
 
 // Auth API
@@ -351,6 +351,8 @@ export const adminApi = {
     image_url: string;
     sort_order?: number;
     is_active?: boolean;
+    button_text?: string | null;
+    button_link?: string | null;
   }) => api.post<BannerSlide>('/admin/banner/slides', data),
 
   updateBannerSlide: (
@@ -360,8 +362,13 @@ export const adminApi = {
       image_url?: string;
       sort_order?: number;
       is_active?: boolean;
+      button_text?: string | null;
+      button_link?: string | null;
     },
   ) => api.patch<BannerSlide>(`/admin/banner/slides/${slideId}`, data),
+
+  deleteBannerSlide: (slideId: number) =>
+    api.delete(`/admin/banner/slides/${slideId}`),
 };
 
 export default api;

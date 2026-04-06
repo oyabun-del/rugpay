@@ -168,6 +168,8 @@ async def create_banner_slide(
         image_url=data.image_url.strip(),
         sort_order=data.sort_order,
         is_active=data.is_active,
+        button_text=data.button_text.strip() if data.button_text else None,
+        button_link=data.button_link.strip() if data.button_link else None,
     )
     return BannerSlideResponse.model_validate(slide)
 
@@ -180,16 +182,39 @@ async def update_banner_slide(
     db: AsyncSession = Depends(get_db),
 ):
     repo = BannerRepository(db)
-    slide = await repo.update(
-        slide_id,
-        title=data.title.strip() if data.title is not None else None,
-        image_url=data.image_url.strip() if data.image_url is not None else None,
-        sort_order=data.sort_order,
-        is_active=data.is_active,
-    )
+    kwargs: dict = {}
+    if data.title is not None:
+        kwargs["title"] = data.title.strip()
+    if data.image_url is not None:
+        kwargs["image_url"] = data.image_url.strip()
+    if data.sort_order is not None:
+        kwargs["sort_order"] = data.sort_order
+    if data.is_active is not None:
+        kwargs["is_active"] = data.is_active
+    if "button_text" in data.model_fields_set:
+        kwargs["button_text"] = data.button_text.strip() if data.button_text else None
+    if "button_link" in data.model_fields_set:
+        kwargs["button_link"] = data.button_link.strip() if data.button_link else None
+    slide = await repo.update(slide_id, **kwargs)
     if not slide:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Banner slide not found",
         )
     return BannerSlideResponse.model_validate(slide)
+
+
+@router.delete("/banner/slides/{slide_id}")
+async def delete_banner_slide(
+    slide_id: int,
+    admin_id: int = Depends(get_current_admin_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    repo = BannerRepository(db)
+    deleted = await repo.delete(slide_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Banner slide not found",
+        )
+    return {"status": "ok"}
