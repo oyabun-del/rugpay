@@ -2,12 +2,30 @@ import asyncio
 import smtplib
 from email.message import EmailMessage
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from app.core.config import settings
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def _smtp_exception_context(exc: BaseException) -> dict[str, Any]:
+    """Extract SMTP response codes and readable text; str(exc) alone is often empty."""
+    ctx: dict[str, Any] = {
+        "exc_type": type(exc).__name__,
+        "message": str(exc) or repr(exc),
+    }
+    code = getattr(exc, "smtp_code", None)
+    if code is not None:
+        ctx["smtp_code"] = code
+    err = getattr(exc, "smtp_error", None)
+    if err is not None:
+        if isinstance(err, bytes):
+            ctx["smtp_error"] = err.decode(errors="replace")
+        else:
+            ctx["smtp_error"] = str(err)
+    return ctx
 
 
 class EmailService:
@@ -60,8 +78,12 @@ class EmailService:
             msg.add_alternative(html_body, subtype="html")
 
         with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=20) as server:
+            if settings.SMTP_DEBUG:
+                server.set_debuglevel(1)
+            server.ehlo()
             if self.smtp_use_tls:
                 server.starttls()
+                server.ehlo()
             if self.smtp_username and self.smtp_password:
                 server.login(self.smtp_username, self.smtp_password)
             server.send_message(msg)
@@ -77,7 +99,16 @@ class EmailService:
             await asyncio.to_thread(self._send_sync, to_email, subject, body, html_body)
             logger.info("Email sent", to_email=to_email, subject=subject)
         except Exception as e:
-            logger.error("Email send failed", to_email=to_email, subject=subject, error=str(e))
+            logger.error(
+                "Email send failed",
+                exc_info=True,
+                to_email=to_email,
+                subject=subject,
+                smtp_host=self.smtp_host,
+                smtp_port=self.smtp_port,
+                smtp_use_tls=self.smtp_use_tls,
+                **_smtp_exception_context(e),
+            )
 
     async def send_welcome_email(self, to_email: str) -> None:
         subject = "Добро пожаловать в RugPay"

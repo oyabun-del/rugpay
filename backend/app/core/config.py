@@ -66,6 +66,8 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: Optional[str] = None
     SMTP_USE_TLS: bool = True
     SMTP_FROM_EMAIL: Optional[str] = None
+    # When True, prints full SMTP client↔server dialogue to stdout (verbose; use only while debugging).
+    SMTP_DEBUG: bool = False
 
     # Wata payment provider (https://wata.pro/api)
     WATA_ENABLED: bool = True
