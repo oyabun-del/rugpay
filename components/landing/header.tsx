@@ -61,6 +61,16 @@ export function Header() {
               <span className="relative z-10">Пополнить</span>
             </Link>
             <Link
+              href="/#games"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                smoothScrollToAnchor('/#games');
+              }}
+            >
+              Каталог
+            </Link>
+            <Link
               href="#features"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               onClick={(e) => {
@@ -156,6 +166,17 @@ export function Header() {
                 }}
               >
                 <span className="relative z-10">Пополнить</span>
+              </Link>
+              <Link
+                href="/#games"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setMobileMenuOpen(false);
+                  smoothScrollToAnchor('/#games');
+                }}
+              >
+                Каталог
               </Link>
               <Link
                 href="#features"
