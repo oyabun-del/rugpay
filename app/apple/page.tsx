@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Mail, Apple, AlertTriangle, X, Check, ChevronDown, Tag } from 'lucide-react';
+import { Loader2, Mail, AlertTriangle, X, Check, ChevronDown, Tag } from 'lucide-react';
+import Image from 'next/image';
 
 const PRIORITY_REGIONS = ['RU', 'US', 'TR'];
 
@@ -68,13 +69,34 @@ function RegionWarningPopup({ onClose }: { onClose: () => void }) {
 
 function AppleBanner() {
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 border border-border/40">
-      <div className="absolute -top-16 -left-16 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-16 -right-16 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="relative w-full overflow-hidden rounded-2xl border border-primary/20"
+      style={{ background: 'linear-gradient(135deg, oklch(0.10 0.03 270) 0%, oklch(0.14 0.06 270) 50%, oklch(0.11 0.04 270) 100%)' }}
+    >
+      {/* Spotlight-style glows */}
+      <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(198,40,46,0.35) 0%, transparent 70%)', filter: 'blur(48px)' }}
+      />
+      <div className="absolute -bottom-16 right-10 w-72 h-72 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, oklch(0.62 0.22 270 / 0.3) 0%, transparent 70%)', filter: 'blur(48px)' }}
+      />
+      <div className="absolute top-0 right-0 w-48 h-48 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(198,40,46,0.15) 0%, transparent 70%)', filter: 'blur(32px)' }}
+      />
+
       <div className="relative z-10 flex flex-col sm:flex-row items-center gap-6 px-8 py-10 sm:py-12">
-        <div className="shrink-0 flex items-center justify-center w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10">
-          <Apple className="w-10 h-10 text-white" />
+        {/* Apple logo */}
+        <div className="shrink-0 flex items-center justify-center w-24 h-24 rounded-2xl"
+          style={{ background: 'oklch(0.18 0.04 270 / 0.6)', backdropFilter: 'blur(8px)', border: '1px solid oklch(0.62 0.22 270 / 0.2)' }}
+        >
+          <Image
+            src="/apple-logo.png"
+            alt="Apple"
+            width={52}
+            height={52}
+            className="object-contain drop-shadow-lg"
+          />
         </div>
+
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">
             Подарочные карты
@@ -82,7 +104,7 @@ function AppleBanner() {
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
             Apple Gift Card
           </h1>
-          <p className="text-sm text-zinc-400 max-w-md">
+          <p className="text-sm max-w-md" style={{ color: 'oklch(0.80 0.02 270)' }}>
             Пополните Apple&nbsp;ID или оплатите покупки в App&nbsp;Store, iTunes,
             Apple&nbsp;Music и других сервисах. Код придёт на email после оплаты.
           </p>
