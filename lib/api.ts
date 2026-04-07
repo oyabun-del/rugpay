@@ -296,6 +296,42 @@ export const bannerApi = {
   getSlides: () => api.get<BannerSlide[]>('/banner/slides'),
 };
 
+// Apple Gift Card API
+export interface AppleRegion {
+  id: string;
+  name: string;
+}
+
+export interface AppleVoucher {
+  id: string;
+  name: string;
+  price: number;
+  minPrice: number;
+  stock: number;
+}
+
+export interface AppleRegionsResponse {
+  regions: AppleRegion[];
+}
+
+export interface AppleVouchersResponse {
+  vouchers: AppleVoucher[];
+  details: { categoryId: string; categoryName: string };
+}
+
+export interface AppleOrderResponse {
+  payment_url: string;
+  order_id: string;
+}
+
+export const appleApi = {
+  getRegions: () => api.get<AppleRegionsResponse>('/apple/regions'),
+  getDenominations: (serviceId: string) =>
+    api.get<AppleVouchersResponse>(`/apple/denominations/${serviceId}`),
+  createOrder: (data: { email: string; voucher_id: string; amount: number }) =>
+    api.post<AppleOrderResponse>('/apple/create', data),
+};
+
 // Promocodes API
 export const promocodesApi = {
   apply: (code: string) =>

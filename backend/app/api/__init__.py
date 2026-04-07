@@ -9,6 +9,7 @@ from .health import router as health_router
 from .stats import router as stats_router
 from .pubg import router as pubg_router
 from .banner import router as banner_router
+from .apple import router as apple_router
 
 api_router = APIRouter()
 
@@ -22,3 +23,4 @@ api_router.include_router(admin_router, prefix="/admin", tags=["admin"])
 api_router.include_router(stats_router, prefix="/stats", tags=["stats"])
 api_router.include_router(pubg_router, prefix="/pubg", tags=["pubg"])
 api_router.include_router(banner_router, prefix="/banner", tags=["banner"])
+api_router.include_router(apple_router, prefix="/apple", tags=["apple"])

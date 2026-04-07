@@ -7,8 +7,8 @@ import { Card, CardContent } from '@/components/ui/card';
 const games = [
   { name: 'Steam', image: '/game-steam.png', comingSoon: false, mode: 'steam' },
   { name: 'PUBG', image: '/game-pubg.png', comingSoon: false, mode: 'pubg' },
+  { name: 'Apple', image: '/game-apple.png', comingSoon: false, href: '/apple' },
   { name: 'Roblox', image: '/game-roblox.png', comingSoon: true },
-  { name: 'Genshin Impact', image: '/game-genshin.png', comingSoon: true },
 ];
 
 export function GamesSection() {
@@ -52,11 +52,12 @@ export function GamesSection() {
               </Card>
             );
 
-            if (!game.comingSoon && game.mode) {
+            if (!game.comingSoon) {
+              const href = 'href' in game && game.href ? game.href : `/?game=${game.mode}#topup`;
               return (
                 <Link
                   key={game.name}
-                  href={`/?game=${game.mode}#topup`}
+                  href={href}
                   className="block"
                   aria-label={`Перейти к форме пополнения ${game.name}`}
                 >
