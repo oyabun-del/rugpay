@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { appleApi, type AppleRegion, type AppleVoucher } from '@/lib/api';
 import { Header } from '@/components/landing/header';
@@ -9,7 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Mail, Apple, AlertTriangle, X, Check } from 'lucide-react';
+import { Loader2, Mail, Apple, AlertTriangle, X, Check, ChevronDown } from 'lucide-react';
+
+const PRIORITY_REGIONS = ['RU', 'US', 'TR'];
 
 // ---------------------------------------------------------------------------
 // Region warning popup
@@ -86,6 +88,18 @@ function AppleBanner() {
 // Region cards
 // ---------------------------------------------------------------------------
 
+function regionLabel(code: string): string {
+  const map: Record<string, string> = {
+    AE: 'ОАЭ', AT: 'Австрия', AU: 'Австралия', BE: 'Бельгия',
+    BR: 'Бразилия', ES: 'Испания', FI: 'Финляндия', FR: 'Франция',
+    IE: 'Ирландия', IN: 'Индия', IT: 'Италия', JP: 'Япония',
+    LU: 'Люксем.', NL: 'Нидерл.', PL: 'Польша', PT: 'Португалия',
+    RU: 'Россия', SA: 'Саудовская Ар.', TR: 'Турция', UK: 'Великобр.',
+    US: 'США',
+  };
+  return map[code] ?? code;
+}
+
 function RegionCard({
   region,
   selected,
@@ -95,14 +109,12 @@ function RegionCard({
   selected: boolean;
   onClick: () => void;
 }) {
-  // Extract country code from "Apple Wallet Code | XX"
   const code = region.name.replace('Apple Wallet Code | ', '');
-
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`relative rounded-xl border p-3 text-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring
+      className={`relative rounded-xl border px-3 py-3 text-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring min-w-0
         ${selected
           ? 'border-primary bg-primary/10 text-primary'
           : 'border-border/50 bg-card/60 hover:border-primary/50 hover:bg-card text-foreground'
@@ -110,27 +122,77 @@ function RegionCard({
     >
       {selected && (
         <span className="absolute top-1.5 right-1.5">
-          <Check className="h-3.5 w-3.5 text-primary" />
+          <Check className="h-3 w-3 text-primary" />
         </span>
       )}
-      <span className="text-xl font-bold block leading-none mb-1">{code}</span>
-      <span className="text-[10px] text-muted-foreground leading-none">
+      <span className="text-lg font-bold block leading-none mb-1">{code}</span>
+      <span className="text-[10px] text-muted-foreground leading-tight block break-words">
         {regionLabel(code)}
       </span>
     </button>
   );
 }
 
-function regionLabel(code: string): string {
-  const map: Record<string, string> = {
-    AE: 'ОАЭ', AT: 'Австрия', AU: 'Австралия', BE: 'Бельгия',
-    BR: 'Бразилия', ES: 'Испания', FI: 'Финляндия', FR: 'Франция',
-    IE: 'Ирландия', IN: 'Индия', IT: 'Италия', JP: 'Япония',
-    LU: 'Люксембург', NL: 'Нидерланды', PL: 'Польша', PT: 'Португалия',
-    RU: 'Россия', SA: 'Саудовская Аравия', TR: 'Турция', UK: 'Великобритания',
-    US: 'США',
-  };
-  return map[code] ?? code;
+function RegionGrid({ regions, selected, onSelect }: {
+  regions: AppleRegion[];
+  selected: string;
+  onSelect: (id: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const expandRef = useRef<HTMLDivElement>(null);
+  const [expandHeight, setExpandHeight] = useState(0);
+
+  const priority = regions.filter(r => {
+    const code = r.name.replace('Apple Wallet Code | ', '');
+    return PRIORITY_REGIONS.includes(code);
+  });
+  const rest = regions.filter(r => {
+    const code = r.name.replace('Apple Wallet Code | ', '');
+    return !PRIORITY_REGIONS.includes(code);
+  });
+
+  useEffect(() => {
+    if (expandRef.current) {
+      setExpandHeight(expandRef.current.scrollHeight);
+    }
+  }, [rest.length]);
+
+  return (
+    <div className="space-y-3">
+      {/* Priority regions always visible */}
+      <div className="grid grid-cols-3 gap-2">
+        {priority.map(r => (
+          <RegionCard key={r.id} region={r} selected={selected === r.id} onClick={() => onSelect(r.id)} />
+        ))}
+      </div>
+
+      {/* Collapsible rest */}
+      {rest.length > 0 && (
+        <>
+          <div
+            ref={expandRef}
+            style={{ maxHeight: expanded ? expandHeight : 0 }}
+            className="overflow-hidden transition-all duration-400 ease-in-out"
+          >
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 pt-1">
+              {rest.map(r => (
+                <RegionCard key={r.id} region={r} selected={selected === r.id} onClick={() => onSelect(r.id)} />
+              ))}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setExpanded(v => !v)}
+            className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+          >
+            <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${expanded ? 'rotate-180' : ''}`} />
+            {expanded ? 'Свернуть' : `Показать весь список (ещё ${rest.length})`}
+          </button>
+        </>
+      )}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -150,7 +212,7 @@ function VoucherCard({
     <button
       type="button"
       onClick={onClick}
-      className={`relative rounded-xl border p-3 text-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring
+      className={`relative rounded-xl border px-3 py-3 text-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring
         ${selected
           ? 'border-primary bg-primary/10 text-primary'
           : 'border-border/50 bg-card/60 hover:border-primary/50 hover:bg-card text-foreground'
@@ -158,11 +220,11 @@ function VoucherCard({
     >
       {selected && (
         <span className="absolute top-1.5 right-1.5">
-          <Check className="h-3.5 w-3.5 text-primary" />
+          <Check className="h-3 w-3 text-primary" />
         </span>
       )}
-      <span className="text-base font-bold block leading-none mb-1">{voucher.name}</span>
-      <span className="text-xs text-muted-foreground">
+      <span className="text-sm font-bold block leading-none mb-1">{voucher.name}</span>
+      <span className="text-xs text-muted-foreground leading-none">
         {voucher.finalPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
       </span>
     </button>
@@ -275,16 +337,11 @@ export default function ApplePage() {
                     Загрузка регионов...
                   </div>
                 ) : (
-                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 gap-2">
-                    {regions.map((r) => (
-                      <RegionCard
-                        key={r.id}
-                        region={r}
-                        selected={selectedRegion === r.id}
-                        onClick={() => setSelectedRegion(r.id)}
-                      />
-                    ))}
-                  </div>
+                  <RegionGrid
+                    regions={regions}
+                    selected={selectedRegion}
+                    onSelect={setSelectedRegion}
+                  />
                 )}
               </CardContent>
             </Card>
