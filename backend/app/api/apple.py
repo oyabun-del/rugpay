@@ -36,7 +36,7 @@ async def get_apple_denominations(service_id: str):
 class AppleOrderCreate(BaseModel):
     email: EmailStr
     voucher_id: str
-    amount: float  # minPrice from the denominations response
+    min_price: float  # raw minPrice from the denominations response (commission applied server-side)
 
 
 @router.post("/create")
@@ -48,7 +48,7 @@ async def create_apple_order(data: AppleOrderCreate):
     try:
         result = await service.create_order(
             voucher_id=data.voucher_id,
-            amount=data.amount,
+            min_price=data.min_price,
             email=data.email,
             success_redirect_url=f"{frontend_url}/apple/success",
             fail_redirect_url=f"{frontend_url}/apple",

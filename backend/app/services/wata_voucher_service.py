@@ -14,11 +14,21 @@ TIMEOUT = 30.0
 
 
 class WataVoucherService:
-    """Client for Wata Digital Goods Voucher API (/api/v3/vouchers)."""
+    """
+    Client for Wata Digital Goods Voucher API (/api/v3/vouchers).
+    Uses a dedicated Apple token (WATA_DG_APPLE_ACCESS_TOKEN) when set,
+    falling back to the general DG token (WATA_DG_ACCESS_TOKEN).
+    """
 
     def __init__(self):
         self.base_url = (settings.WATA_DG_API_BASE_URL or "https://dg-api.wata.pro/api").rstrip("/")
-        self.token = settings.WATA_DG_ACCESS_TOKEN or settings.WATA_ACCESS_TOKEN
+        # Apple orders use their own terminal/token if configured
+        self.token = (
+            settings.WATA_DG_APPLE_ACCESS_TOKEN
+            or settings.WATA_DG_ACCESS_TOKEN
+            or settings.WATA_ACCESS_TOKEN
+        )
+        self.commission_percent: float = settings.APPLE_COMMISSION_PERCENT
 
     def _headers(self) -> dict:
         return {
@@ -29,6 +39,17 @@ class WataVoucherService:
     @property
     def is_configured(self) -> bool:
         return bool(self.base_url and self.token)
+
+    def apply_commission(self, min_price: float) -> float:
+        """
+        Calculate the customer-facing price by applying the commission markup.
+        Constraint: minPrice <= amount <= minPrice * 1.5
+        """
+        markup = min_price * (self.commission_percent / 100)
+        amount = min_price + markup
+        # Clamp to Wata's upper limit
+        max_amount = min_price * 1.5
+        return round(min(amount, max_amount), 2)
 
     async def get_apple_services(self) -> List[dict]:
         """Return available Apple Wallet Code services (regions)."""
@@ -46,7 +67,7 @@ class WataVoucherService:
         ]
 
     async def get_vouchers(self, category_id: str) -> dict:
-        """Return denominations for a service."""
+        """Return denominations for a service, with finalPrice including commission."""
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             response = await client.get(
                 f"{self.base_url}/v3/vouchers/{category_id}",
@@ -54,13 +75,13 @@ class WataVoucherService:
             )
         response.raise_for_status()
         data = response.json()
-        # Filter only available vouchers with stock
         vouchers = [
             {
                 "id": str(v["id"]),
                 "name": v["name"],
                 "price": v["price"],
                 "minPrice": v["minPrice"],
+                "finalPrice": self.apply_commission(v["minPrice"]),
                 "stock": v.get("stock", 0),
             }
             for v in data.get("vouchers", [])
@@ -71,19 +92,24 @@ class WataVoucherService:
     async def create_order(
         self,
         voucher_id: str,
-        amount: float,
+        min_price: float,
         email: str,
         internal_order_id: Optional[str] = None,
         success_redirect_url: Optional[str] = None,
         fail_redirect_url: Optional[str] = None,
     ) -> dict:
-        """Create a voucher order. amount must satisfy: minPrice <= amount <= minPrice * 1.5."""
+        """
+        Create a voucher order.
+        amount is calculated as minPrice + commission, clamped to minPrice * 1.5.
+        """
         if not internal_order_id:
             internal_order_id = str(uuid.uuid4())
 
+        amount = self.apply_commission(min_price)
+
         payload: dict = {
             "voucherId": int(voucher_id),
-            "amount": round(amount, 2),
+            "amount": amount,
             "count": 1,
             "orderId": internal_order_id,
             "email": email,
@@ -93,6 +119,14 @@ class WataVoucherService:
             payload["successRedirectUrl"] = success_redirect_url
         if fail_redirect_url:
             payload["failRedirectUrl"] = fail_redirect_url
+
+        logger.info(
+            "Creating Apple voucher order",
+            voucher_id=voucher_id,
+            min_price=min_price,
+            amount=amount,
+            email=email,
+        )
 
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             response = await client.post(

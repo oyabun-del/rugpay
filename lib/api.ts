@@ -307,6 +307,7 @@ export interface AppleVoucher {
   name: string;
   price: number;
   minPrice: number;
+  finalPrice: number;
   stock: number;
 }
 
@@ -328,7 +329,7 @@ export const appleApi = {
   getRegions: () => api.get<AppleRegionsResponse>('/apple/regions'),
   getDenominations: (serviceId: string) =>
     api.get<AppleVouchersResponse>(`/apple/denominations/${serviceId}`),
-  createOrder: (data: { email: string; voucher_id: string; amount: number }) =>
+  createOrder: (data: { email: string; voucher_id: string; min_price: number }) =>
     api.post<AppleOrderResponse>('/apple/create', data),
 };
 
