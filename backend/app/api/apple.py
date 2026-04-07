@@ -9,6 +9,15 @@ router = APIRouter()
 logger = get_logger(__name__)
 
 
+@router.get("/config")
+async def get_apple_config():
+    """Return public Apple Gift Card config (discount, commission)."""
+    return {
+        "discount_percent": settings.APPLE_DISCOUNT_PERCENT,
+        "commission_percent": settings.APPLE_COMMISSION_PERCENT,
+    }
+
+
 @router.get("/regions")
 async def get_apple_regions():
     """Return available Apple Wallet Code regions."""

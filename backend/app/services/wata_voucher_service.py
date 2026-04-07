@@ -29,6 +29,7 @@ class WataVoucherService:
             or settings.WATA_ACCESS_TOKEN
         )
         self.commission_percent: float = settings.APPLE_COMMISSION_PERCENT
+        self.discount_percent: float = settings.APPLE_DISCOUNT_PERCENT
 
     def _headers(self) -> dict:
         return {
@@ -41,15 +42,15 @@ class WataVoucherService:
         return bool(self.base_url and self.token)
 
     def apply_commission(self, min_price: float) -> float:
-        """
-        Calculate the customer-facing price by applying the commission markup.
-        Constraint: minPrice <= amount <= minPrice * 1.5
-        """
+        """Price after commission markup, clamped to minPrice * 1.5."""
         markup = min_price * (self.commission_percent / 100)
         amount = min_price + markup
-        # Clamp to Wata's upper limit
-        max_amount = min_price * 1.5
-        return round(min(amount, max_amount), 2)
+        return round(min(amount, min_price * 1.5), 2)
+
+    def apply_discount(self, final_price: float, min_price: float) -> float:
+        """Discount off finalPrice, but never below minPrice."""
+        discounted = final_price * (1 - self.discount_percent / 100)
+        return round(max(discounted, min_price), 2)
 
     async def get_apple_services(self) -> List[dict]:
         """Return available Apple Wallet Code services (regions)."""
@@ -75,18 +76,22 @@ class WataVoucherService:
             )
         response.raise_for_status()
         data = response.json()
-        vouchers = [
-            {
+        vouchers = []
+        for v in data.get("vouchers", []):
+            if not v.get("isAvailable") or v.get("stock", 0) <= 0:
+                continue
+            min_price = v["minPrice"]
+            final_price = self.apply_commission(min_price)
+            discounted_price = self.apply_discount(final_price, min_price)
+            vouchers.append({
                 "id": str(v["id"]),
                 "name": v["name"],
                 "price": v["price"],
-                "minPrice": v["minPrice"],
-                "finalPrice": self.apply_commission(v["minPrice"]),
+                "minPrice": min_price,
+                "finalPrice": final_price,
+                "discountedPrice": discounted_price,
                 "stock": v.get("stock", 0),
-            }
-            for v in data.get("vouchers", [])
-            if v.get("isAvailable") and v.get("stock", 0) > 0
-        ]
+            })
         return {"details": data.get("details", {}), "vouchers": vouchers}
 
     async def create_order(
@@ -100,12 +105,13 @@ class WataVoucherService:
     ) -> dict:
         """
         Create a voucher order.
-        amount is calculated as minPrice + commission, clamped to minPrice * 1.5.
+        amount = discountedPrice (commission + discount applied), never below minPrice.
         """
         if not internal_order_id:
             internal_order_id = str(uuid.uuid4())
 
-        amount = self.apply_commission(min_price)
+        final_price = self.apply_commission(min_price)
+        amount = self.apply_discount(final_price, min_price)
 
         payload: dict = {
             "voucherId": int(voucher_id),

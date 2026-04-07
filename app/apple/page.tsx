@@ -9,9 +9,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Mail, Apple, AlertTriangle, X, Check, ChevronDown } from 'lucide-react';
+import { Loader2, Mail, Apple, AlertTriangle, X, Check, ChevronDown, Tag } from 'lucide-react';
 
 const PRIORITY_REGIONS = ['RU', 'US', 'TR'];
+
+/** Strip verbose Apple product prefixes from voucher names, e.g. "App Store & iTunes Code 150 TL" → "150 TL" */
+function cleanVoucherName(raw: string): string {
+  return raw
+    .replace(/App Store\s*&\s*iTunes\s*(Code\s*)?/i, '')
+    .replace(/Apple\s*(Wallet\s*)?(Code\s*)?/i, '')
+    .trim();
+}
 
 // ---------------------------------------------------------------------------
 // Region warning popup
@@ -223,9 +231,9 @@ function VoucherCard({
           <Check className="h-3 w-3 text-primary" />
         </span>
       )}
-      <span className="text-sm font-bold block leading-none mb-1">{voucher.name}</span>
+      <span className="text-sm font-bold block leading-none mb-1">{cleanVoucherName(voucher.name)}</span>
       <span className="text-xs text-muted-foreground leading-none">
-        {voucher.finalPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+        {voucher.discountedPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
       </span>
     </button>
   );
@@ -239,6 +247,7 @@ export default function ApplePage() {
   const router = useRouter();
 
   const [showWarning, setShowWarning] = useState(false);
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [regions, setRegions] = useState<AppleRegion[]>([]);
   const [vouchers, setVouchers] = useState<AppleVoucher[]>([]);
 
@@ -252,6 +261,7 @@ export default function ApplePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    appleApi.getConfig().then(({ data }) => setDiscountPercent(data.discount_percent)).catch(() => {});
     appleApi
       .getRegions()
       .then(({ data }) => setRegions(data.regions))
@@ -286,7 +296,7 @@ export default function ApplePage() {
       const { data } = await appleApi.createOrder({
         email,
         voucher_id: selectedVoucherData.id,
-        min_price: selectedVoucherData.minPrice,
+        min_price: selectedVoucherData.minPrice, // commission + discount applied server-side
       });
       router.push(data.payment_url);
     } catch {
@@ -383,13 +393,40 @@ export default function ApplePage() {
                   <div className="rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-sm space-y-1">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Карта</span>
-                      <span className="font-medium">{selectedVoucherData.name}</span>
+                      <span className="font-medium">{cleanVoucherName(selectedVoucherData.name)}</span>
                     </div>
+                    {discountPercent > 0 && selectedVoucherData.discountedPrice < selectedVoucherData.finalPrice && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Без скидки</span>
+                        <span className="line-through text-muted-foreground">
+                          {selectedVoucherData.finalPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Итого к оплате</span>
                       <span className="font-bold text-primary text-base">
-                        {selectedVoucherData.finalPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                        {selectedVoucherData.discountedPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
                       </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Discount banner */}
+                {discountPercent > 0 && (
+                  <div className="relative overflow-hidden rounded-xl border border-primary/50 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 px-5 py-4 flex items-center gap-4">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,hsl(var(--primary)/0.15),transparent_70%)] pointer-events-none" />
+                    <div className="shrink-0 flex items-center justify-center w-11 h-11 rounded-full bg-primary/20 border border-primary/40">
+                      <Tag className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-primary/80 font-medium uppercase tracking-wide">Специальное предложение</p>
+                      <p className="text-lg font-bold text-foreground leading-tight">
+                        Скидка <span className="text-primary">{discountPercent}%</span> на все карты Apple
+                      </p>
+                    </div>
+                    <div className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-primary-foreground font-bold text-sm shadow">
+                      -{discountPercent}%
                     </div>
                   </div>
                 )}

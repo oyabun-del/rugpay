@@ -308,7 +308,13 @@ export interface AppleVoucher {
   price: number;
   minPrice: number;
   finalPrice: number;
+  discountedPrice: number;
   stock: number;
+}
+
+export interface AppleConfig {
+  discount_percent: number;
+  commission_percent: number;
 }
 
 export interface AppleRegionsResponse {
@@ -326,6 +332,7 @@ export interface AppleOrderResponse {
 }
 
 export const appleApi = {
+  getConfig: () => api.get<AppleConfig>('/apple/config'),
   getRegions: () => api.get<AppleRegionsResponse>('/apple/regions'),
   getDenominations: (serviceId: string) =>
     api.get<AppleVouchersResponse>(`/apple/denominations/${serviceId}`),

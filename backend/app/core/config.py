@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     # Wata Digital Goods Apple Gift Card (separate terminal)
     WATA_DG_APPLE_ACCESS_TOKEN: Optional[str] = None  # separate token for Apple orders
     APPLE_COMMISSION_PERCENT: float = 10.0  # markup % applied on top of minPrice
+    APPLE_DISCOUNT_PERCENT: float = 0.0    # promotional discount % off finalPrice (capped at commission)
 
     # Payment (generic)
     PAYMENT_WEBHOOK_SECRET: Optional[str] = None
