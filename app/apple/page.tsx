@@ -254,10 +254,7 @@ function VoucherCard({
           <Check className="h-3 w-3 text-primary" />
         </span>
       )}
-      <span className="text-sm font-bold block leading-none mb-1">{cleanVoucherName(voucher.name)}</span>
-      <span className="text-xs text-muted-foreground leading-none">
-        {voucher.discountedPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
-      </span>
+      <span className="text-sm font-bold block leading-none">{cleanVoucherName(voucher.name)}</span>
     </button>
   );
 }
@@ -439,9 +436,9 @@ export default function ApplePage() {
                         </span>
                       </div>
                     )}
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Итого к оплате</span>
-                      <span className="font-bold text-primary text-base">
+                      <span className="inline-flex items-center rounded-lg bg-primary px-3 py-1 text-primary-foreground font-bold text-lg shadow">
                         {selectedVoucherData.discountedPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
                       </span>
                     </div>
@@ -499,6 +496,13 @@ export default function ApplePage() {
 
                 <p className="text-xs text-center text-muted-foreground">
                   Код подарочной карты будет отправлен на указанный email после успешной оплаты
+                </p>
+
+                <p className="text-[10px] text-muted-foreground text-center leading-tight">
+                  Нажимая &laquo;Перейти к оплате&raquo;, вы принимаете{' '}
+                  <a href="/privacy" className="underline hover:text-foreground transition-colors">Политику конфиденциальности</a>{' '}
+                  и{' '}
+                  <a href="/terms" className="underline hover:text-foreground transition-colors">Публичную оферту</a>.
                 </p>
               </CardContent>
             </Card>

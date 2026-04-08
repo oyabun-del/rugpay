@@ -54,13 +54,13 @@ class WataVoucherService:
 
     async def get_apple_services(self) -> List[dict]:
         """Return available Apple Wallet Code services (regions)."""
+        request_url = f"{self.base_url}/v3/vouchers/services"
+        logger.info("Wata DG API request — get services", request_url=request_url)
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            response = await client.get(
-                f"{self.base_url}/v3/vouchers/services",
-                headers=self._headers(),
-            )
+            response = await client.get(request_url, headers=self._headers())
         response.raise_for_status()
         services = response.json()
+        logger.info("Wata DG API response — services", count=len(services), status=response.status_code)
         return [
             {"id": str(s["id"]), "name": s["name"]}
             for s in services
@@ -69,13 +69,13 @@ class WataVoucherService:
 
     async def get_vouchers(self, category_id: str) -> dict:
         """Return denominations for a service, with finalPrice including commission."""
+        request_url = f"{self.base_url}/v3/vouchers/{category_id}"
+        logger.info("Wata DG API request — get vouchers", request_url=request_url, category_id=category_id)
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            response = await client.get(
-                f"{self.base_url}/v3/vouchers/{category_id}",
-                headers=self._headers(),
-            )
+            response = await client.get(request_url, headers=self._headers())
         response.raise_for_status()
         data = response.json()
+        logger.info("Wata DG API response — vouchers", category_id=category_id, voucher_count=len(data.get("vouchers", [])), status=response.status_code)
         vouchers = []
         for v in data.get("vouchers", []):
             if not v.get("isAvailable") or v.get("stock", 0) <= 0:
@@ -126,17 +126,25 @@ class WataVoucherService:
         if fail_redirect_url:
             payload["failRedirectUrl"] = fail_redirect_url
 
+        request_url = f"{self.base_url}/v3/vouchers"
+
         logger.info(
-            "Creating Apple voucher order",
+            "Creating Apple voucher order — Wata DG API request",
+            request_url=request_url,
+            request_payload=payload,
             voucher_id=voucher_id,
             min_price=min_price,
-            amount=amount,
+            commission_percent=self.commission_percent,
+            discount_percent=self.discount_percent,
+            final_price_after_commission=final_price,
+            amount_after_discount=amount,
             email=email,
+            internal_order_id=internal_order_id,
         )
 
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             response = await client.post(
-                f"{self.base_url}/v3/vouchers",
+                request_url,
                 headers=self._headers(),
                 json=payload,
             )
@@ -145,9 +153,19 @@ class WataVoucherService:
             logger.error(
                 "Wata voucher order failed",
                 status=response.status_code,
-                body=response.text,
+                response_body=response.text,
+                request_url=request_url,
+                request_payload=payload,
                 voucher_id=voucher_id,
             )
             raise RuntimeError(f"Wata voucher API error {response.status_code}: {response.text}")
+
+        logger.info(
+            "Wata DG API response — Apple voucher order created",
+            status=response.status_code,
+            response_body=response.text,
+            voucher_id=voucher_id,
+            internal_order_id=internal_order_id,
+        )
 
         return response.json()

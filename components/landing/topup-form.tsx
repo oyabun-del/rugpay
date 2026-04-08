@@ -597,13 +597,15 @@ export function TopupForm() {
                 </span>
                 <span className="text-green-500">-{(finalAmount * (steamDiscountPercent / 100)).toFixed(2)} RUB</span>
               </div>
-              <div className="border-t border-border pt-2 flex justify-between font-semibold">
+              <div className="border-t border-border pt-2 flex justify-between items-center font-semibold">
                 <span>Итого</span>
-                <div className="flex flex-col items-end">
+                <div className="flex flex-col items-end gap-0.5">
                   <span className="text-xs text-muted-foreground line-through font-normal">
                     {finalAmount.toFixed(2)} RUB
                   </span>
-                  <span className="text-primary text-lg">{(finalAmount * steamDiscountMultiplier).toFixed(2)} RUB</span>
+                  <span className="inline-flex items-center rounded-lg bg-primary px-3 py-1 text-primary-foreground font-bold text-lg shadow">
+                    {(finalAmount * steamDiscountMultiplier).toFixed(2)} RUB
+                  </span>
                 </div>
               </div>
             </div>

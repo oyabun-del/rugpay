@@ -6,8 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const games = [
   { name: 'Steam', image: '/game-steam.png', comingSoon: false, mode: 'steam' },
-  { name: 'PUBG', image: '/game-pubg.png', comingSoon: false, mode: 'pubg' },
-  { name: 'Apple', image: '/game-apple.png', comingSoon: false, href: '/apple' },
+  { name: 'Pubg Mobile', image: '/game-pubg.png', comingSoon: false, mode: 'pubg' },
+  { name: 'Подарочная карта Apple', image: '/game-apple.png', comingSoon: false, href: '/apple' },
   { name: 'Roblox', image: '/game-roblox.png', comingSoon: true },
 ];
 
@@ -24,7 +24,7 @@ export function GamesSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 max-w-4xl mx-auto">
           {games.map((game) => {
             const card = (
               <Card
@@ -44,7 +44,7 @@ export function GamesSection() {
                         Скоро...
                       </div>
                     )}
-                    <h3 className="absolute bottom-2.5 left-3 font-bold text-base md:text-lg text-white group-hover:text-primary transition-colors">
+                    <h3 className="absolute bottom-3 left-3 right-3 font-bold text-sm md:text-base lg:text-lg text-white group-hover:text-primary transition-colors leading-tight">
                       {game.name}
                     </h3>
                   </div>
