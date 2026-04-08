@@ -73,6 +73,8 @@ class OrderResponse(BaseModel):
     steam_nickname: Optional[str] = None
     pubg_uid: Optional[str] = None
     pubg_uc_amount: Optional[int] = None
+    apple_voucher_id: Optional[str] = None
+    apple_region: Optional[str] = None
     email: str
     amount: float
     commission: float

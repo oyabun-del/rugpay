@@ -18,6 +18,7 @@ class OrderStatus(str, enum.Enum):
 class OrderType(str, enum.Enum):
     STEAM = "steam"
     PUBG = "pubg"
+    APPLE = "apple"
 
 
 class Order(Base):
@@ -42,6 +43,11 @@ class Order(Base):
     pubg_fazercards_order_id = Column(String(255), nullable=True)
     pubg_gift_codes = Column(String(2048), nullable=True)
     
+    # Apple Gift Card info (nullable for non-apple orders)
+    apple_voucher_id = Column(String(64), nullable=True)
+    apple_wata_order_id = Column(String(255), nullable=True)
+    apple_region = Column(String(10), nullable=True)
+
     # Order details
     email = Column(String(255), nullable=False)
     amount = Column(Float, nullable=False)

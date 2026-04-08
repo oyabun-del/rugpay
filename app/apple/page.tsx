@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { appleApi, type AppleRegion, type AppleVoucher } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import { Header } from '@/components/landing/header';
 import { Footer } from '@/components/landing/footer';
 import { Button } from '@/components/ui/button';
@@ -267,6 +268,7 @@ function VoucherCard({
 
 export default function ApplePage() {
   const router = useRouter();
+  const { setSession } = useAuth();
 
   const [showWarning, setShowWarning] = useState(false);
   const [discountPercent, setDiscountPercent] = useState(0);
@@ -309,6 +311,12 @@ export default function ApplePage() {
 
   const selectedVoucherData = vouchers.find((v) => v.id === selectedVoucher);
 
+  // Extract region code from selected region
+  const selectedRegionData = regions.find((r) => r.id === selectedRegion);
+  const regionCode = selectedRegionData
+    ? selectedRegionData.name.replace('Apple Wallet Code | ', '')
+    : '';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedVoucherData) return;
@@ -318,9 +326,15 @@ export default function ApplePage() {
       const { data } = await appleApi.createOrder({
         email,
         voucher_id: selectedVoucherData.id,
-        min_price: selectedVoucherData.minPrice, // commission + discount applied server-side
+        min_price: selectedVoucherData.minPrice,
+        region: regionCode,
       });
-      router.push(data.payment_url);
+      // Set guest session if returned
+      if (data.guest_access_token && data.guest_user) {
+        await setSession(data.guest_access_token, data.guest_user);
+      }
+      // Redirect to our payment page (which has pay link + status tracking)
+      router.push(`/payment/${data.order.id}`);
     } catch {
       setError('Не удалось создать заказ. Попробуйте позже.');
     } finally {

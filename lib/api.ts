@@ -62,10 +62,11 @@ export interface User {
 
 export interface Order {
   id: number;
-  order_type?: 'steam' | 'pubg';
+  order_type?: 'steam' | 'pubg' | 'apple';
   steam_nickname?: string;
   pubg_uid?: string;
   pubg_uc_amount?: number;
+  apple_region?: string;
   amount: number;
   commission: number;
   final_amount: number;
@@ -327,8 +328,12 @@ export interface AppleVouchersResponse {
 }
 
 export interface AppleOrderResponse {
+  order: Order;
   payment_url: string;
-  order_id: string;
+  payment_provider: PaymentProvider;
+  guest_access_token?: string;
+  guest_expires_at?: string;
+  guest_user?: User;
 }
 
 export const appleApi = {
@@ -336,7 +341,7 @@ export const appleApi = {
   getRegions: () => api.get<AppleRegionsResponse>('/apple/regions'),
   getDenominations: (serviceId: string) =>
     api.get<AppleVouchersResponse>(`/apple/denominations/${serviceId}`),
-  createOrder: (data: { email: string; voucher_id: string; min_price: number }) =>
+  createOrder: (data: { email: string; voucher_id: string; min_price: number; region?: string }) =>
     api.post<AppleOrderResponse>('/apple/create', data),
 };
 

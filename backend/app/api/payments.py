@@ -33,6 +33,7 @@ class PaymentOrderInfo(BaseModel):
     steam_nickname: Optional[str] = None
     pubg_uid: Optional[str] = None
     pubg_uc_amount: Optional[int] = None
+    apple_region: Optional[str] = None
     email: str
 
 
@@ -75,6 +76,11 @@ def _enqueue_order_fallback(order_id: int, kind: str = "steam_topup") -> None:
 
 def _dispatch_topup_task(order_id: int, order_type: str) -> None:
     """Dispatch the correct Celery task based on order type, with resilient queue fallback."""
+    if order_type == OrderType.APPLE:
+        # Apple voucher codes are delivered by Wata directly to the customer email.
+        # No Celery task needed — order is already marked completed by the webhook.
+        logger.info("Apple order completed (voucher delivered by Wata)", order_id=order_id)
+        return
     kind = "pubg_topup" if order_type == OrderType.PUBG else "steam_topup"
     try:
         if order_type == OrderType.PUBG:
@@ -431,6 +437,7 @@ async def get_order_for_payment_page(
         steam_nickname=order.steam_nickname,
         pubg_uid=order.pubg_uid,
         pubg_uc_amount=order.pubg_uc_amount,
+        apple_region=getattr(order, "apple_region", None),
         email=order.email,
     )
 
