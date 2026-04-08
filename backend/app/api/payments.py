@@ -353,8 +353,9 @@ async def get_order_for_payment_page(
             detail="Order not found",
         )
 
-    # Fallback sync with Wata transaction API (covers both Steam DG and PUBG H2H).
-    if settings.WATA_ENABLED and order.status in [OrderStatus.PENDING, OrderStatus.PAID, OrderStatus.PROCESSING]:
+    # Fallback sync with Wata transaction API (covers Steam DG and PUBG H2H, NOT Apple).
+    # Apple orders use Wata Digital Goods API — their webhooks are handled separately.
+    if settings.WATA_ENABLED and order.order_type != OrderType.APPLE and order.status in [OrderStatus.PENDING, OrderStatus.PAID, OrderStatus.PROCESSING]:
         wata = WataService()
         tx = await wata.get_transaction_by_order_id(str(order.id))
         if tx:
@@ -370,8 +371,8 @@ async def get_order_for_payment_page(
                 await service.process_payment_webhook(order.id, "failed", tx_id)
                 order = await repo.get_by_id(order_id)
 
-    # Fallback sync with YooKassa.
-    if settings.YOOKASSA_ENABLED and order.status in [OrderStatus.PENDING]:
+    # Fallback sync with YooKassa (not for Apple orders).
+    if settings.YOOKASSA_ENABLED and order.order_type != OrderType.APPLE and order.status in [OrderStatus.PENDING]:
         yookassa_payment_id = _extract_yookassa_payment_id(order)
         if yookassa_payment_id:
             yookassa = YooKassaService()

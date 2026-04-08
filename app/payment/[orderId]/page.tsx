@@ -149,10 +149,11 @@ export default function PaymentPage({
   };
   const currentStep = statusStepIndex[status];
   const isPubg = order.order_type === 'pubg';
+  const isApple = order.order_type === 'apple';
   const flowSteps = [
     'Ожидание оплаты',
     'Оплата получена',
-    isPubg ? 'Покупка PUBG UC' : 'Пополнение Steam',
+    isApple ? 'Доставка кода' : isPubg ? 'Покупка PUBG UC' : 'Пополнение Steam',
     'Выполнено',
   ];
 
@@ -255,7 +256,20 @@ export default function PaymentPage({
 
             {/* Order details */}
             <div className="space-y-3 rounded-lg bg-secondary/30 p-4">
-              {isPubg ? (
+              {isApple ? (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Тип</span>
+                    <span className="font-medium">Apple Gift Card</span>
+                  </div>
+                  {order.apple_region && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Регион</span>
+                      <span className="font-medium">{order.apple_region}</span>
+                    </div>
+                  )}
+                </>
+              ) : isPubg ? (
                 <>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">PUBG UID</span>
@@ -290,12 +304,18 @@ export default function PaymentPage({
             {status === 'completed' && (
               <div className="text-center p-4 rounded-lg bg-green-500/10 border border-green-500/20">
                 <p className="text-green-500 font-medium">
-                  {isPubg ? 'PUBG UC успешно приобретены!' : 'Баланс Steam успешно пополнен!'}
+                  {isApple
+                    ? 'Подарочная карта Apple доставлена!'
+                    : isPubg
+                      ? 'PUBG UC успешно приобретены!'
+                      : 'Баланс Steam успешно пополнен!'}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {isPubg
-                    ? 'Гифт-карта UC отправлена на указанный UID.'
-                    : 'Средства уже доступны в вашем Steam-кошельке.'}
+                  {isApple
+                    ? 'Код отправлен на указанный email.'
+                    : isPubg
+                      ? 'Гифт-карта UC отправлена на указанный UID.'
+                      : 'Средства уже доступны в вашем Steam-кошельке.'}
                 </p>
               </div>
             )}

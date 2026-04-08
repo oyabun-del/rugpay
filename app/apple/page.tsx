@@ -330,8 +330,12 @@ export default function ApplePage() {
       if (data.guest_access_token && data.guest_user) {
         await setSession(data.guest_access_token, data.guest_user);
       }
-      // Redirect to our payment page (which has pay link + status tracking)
-      router.push(`/payment/${data.order.id}`);
+      // Redirect directly to Wata DG payment page (not /payment/{orderId})
+      if (data.payment_url) {
+        window.location.href = data.payment_url;
+      } else {
+        router.push(`/payment/${data.order.id}`);
+      }
     } catch {
       setError('Не удалось создать заказ. Попробуйте позже.');
     } finally {
