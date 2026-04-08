@@ -145,8 +145,8 @@ async def create_apple_order(
             min_price=data.min_price,
             email=data.email,
             internal_order_id=str(order.id),
-            success_redirect_url=f"{frontend_url}/payment/{order.id}?status=success",
-            fail_redirect_url=f"{frontend_url}/payment/{order.id}?status=fail",
+            success_redirect_url=f"{frontend_url}/apple/success",
+            fail_redirect_url=f"{frontend_url}/apple?status=fail",
         )
     except RuntimeError as e:
         logger.error("Apple Wata DG order failed", order_id=order.id, error=str(e))
