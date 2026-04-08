@@ -96,6 +96,24 @@ def _dispatch_topup_task(order_id: int, order_type: str) -> None:
         _enqueue_order_fallback(order_id, kind)
 
 
+def _map_wata_status(transaction_status: str) -> Optional[str]:
+    """Map Wata transaction status to internal payment status."""
+    if transaction_status == "Paid":
+        return "completed"
+    if transaction_status == "Declined":
+        return "failed"
+    return None
+
+
+def _map_yookassa_status(event: str, provider_status: str) -> Optional[str]:
+    """Map YooKassa event/status to internal payment status."""
+    if event == "payment.succeeded" or provider_status == "succeeded":
+        return "completed"
+    if event == "payment.canceled" or provider_status == "canceled":
+        return "failed"
+    return None
+
+
 def verify_webhook_signature_hmac(
     payload: bytes,
     signature: str,
@@ -169,7 +187,7 @@ async def payment_webhook(
         transaction_id = data.get("transactionId")
 
         if not order_id_str:
-            logger.error("Wata webhook missing orderId", data=data)
+            logger.error("Wata webhook missing orderId")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Missing orderId",
@@ -183,12 +201,8 @@ async def payment_webhook(
             )
 
         # Only final statuses update order
-        if transaction_status == "Paid":
-            payment_status = "completed"
-        elif transaction_status == "Declined":
-            payment_status = "failed"
-        else:
-            # Created, Pending — acknowledge only
+        payment_status = _map_wata_status(transaction_status)
+        if not payment_status:
             logger.info("Wata webhook non-final status", order_id=order_id, transaction_status=transaction_status)
             return {"status": "ok"}
 
@@ -239,11 +253,8 @@ async def payment_webhook(
                 detail="Invalid metadata.order_id in YooKassa webhook",
             )
 
-        if event == "payment.succeeded" or provider_status == "succeeded":
-            payment_status = "completed"
-        elif event == "payment.canceled" or provider_status == "canceled":
-            payment_status = "failed"
-        else:
+        payment_status = _map_yookassa_status(event, provider_status)
+        if not payment_status:
             logger.info(
                 "YooKassa webhook non-final status",
                 order_id=order_id,
@@ -302,7 +313,7 @@ async def payment_webhook(
             detail="Invalid JSON payload",
         )
 
-    logger.info("Payment webhook received", data=data)
+    logger.info("Payment webhook received", order_id=data.get("order_id"), status=data.get("status"))
     order_id = data.get("order_id")
     payment_status = data.get("status")
     payment_provider_id = data.get("payment_id")

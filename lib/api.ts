@@ -1,5 +1,26 @@
 import axios from 'axios';
 
+const TRUSTED_PAYMENT_DOMAINS = [
+  'wata.pro',
+  'pay.wata.pro',
+  'dg-api.wata.pro',
+  'rugpay.ru',
+  'yoomoney.ru',
+  'yookassa.ru',
+];
+
+/** Validate that a payment URL points to a trusted domain. */
+export function isTrustedPaymentUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return TRUSTED_PAYMENT_DOMAINS.some(
+      (d) => parsed.hostname === d || parsed.hostname.endsWith(`.${d}`),
+    );
+  } catch {
+    return false;
+  }
+}
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '/api');
@@ -243,6 +264,12 @@ export const ordersApi = {
   getPricingConfig: () => api.get<OrderPricingConfig>('/orders/pricing-config'),
 
   getPaymentProviders: () => api.get<PaymentProvidersResponse>('/orders/payment-providers'),
+
+  validatePromocode: (code: string) =>
+    api.post<{ valid: boolean; discount?: number; discount_amount?: number; message?: string }>(
+      '/promocode/apply',
+      { code, amount: 0 },
+    ),
 };
 
 // Payment page: public order info (no auth)

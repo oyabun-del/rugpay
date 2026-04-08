@@ -131,14 +131,12 @@ class WataVoucherService:
         logger.info(
             "Creating Apple voucher order — Wata DG API request",
             request_url=request_url,
-            request_payload=payload,
             voucher_id=voucher_id,
             min_price=min_price,
             commission_percent=self.commission_percent,
             discount_percent=self.discount_percent,
             final_price_after_commission=final_price,
             amount_after_discount=amount,
-            email=email,
             internal_order_id=internal_order_id,
         )
 
@@ -155,8 +153,8 @@ class WataVoucherService:
                 status=response.status_code,
                 response_body=response.text,
                 request_url=request_url,
-                request_payload=payload,
                 voucher_id=voucher_id,
+                internal_order_id=internal_order_id,
             )
             raise RuntimeError(f"Wata voucher API error {response.status_code}: {response.text}")
 

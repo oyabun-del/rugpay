@@ -30,3 +30,8 @@ logs/
 
 nginx/ssl/*
 !nginx/ssl/.gitkeep
+
+.ai/*
+.claude/
+.ai/
+app/favicon.ico

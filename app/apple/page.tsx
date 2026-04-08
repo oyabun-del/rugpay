@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { appleApi, type AppleRegion, type AppleVoucher } from '@/lib/api';
+import { appleApi, isTrustedPaymentUrl, type AppleRegion, type AppleVoucher } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { Header } from '@/components/landing/header';
 import { Footer } from '@/components/landing/footer';
@@ -33,7 +33,7 @@ function RegionWarningPopup({ onClose }: { onClose: () => void }) {
       <div className="relative w-full max-w-md rounded-2xl border border-border/50 bg-card shadow-2xl p-6">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors"
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
           aria-label="Закрыть"
         >
           <X className="h-5 w-5" />
@@ -331,7 +331,7 @@ export default function ApplePage() {
         await setSession(data.guest_access_token, data.guest_user);
       }
       // Redirect directly to Wata DG payment page (not /payment/{orderId})
-      if (data.payment_url) {
+      if (data.payment_url && isTrustedPaymentUrl(data.payment_url)) {
         window.location.href = data.payment_url;
       } else {
         router.push(`/payment/${data.order.id}`);

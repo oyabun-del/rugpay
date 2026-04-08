@@ -56,7 +56,7 @@ class OrderService:
         if data.email:
             return str(data.email)
         # Technical fallback: Steam form no longer sends email.
-        return f"{data.steam_nickname.lower()}@xraytune.ru"
+        return f"{data.steam_nickname.lower()}{GUEST_EMAIL_SUFFIX}"
 
     def _resolve_order_payment_provider(self, order) -> PaymentProvider:
         steam_response = (order.steam_response or "").strip()
@@ -488,16 +488,26 @@ class OrderService:
             return False
         
         if payment_status == "completed":
-            # Idempotency: avoid re-processing already handled orders.
-            if order.status in [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.COMPLETED]:
+            # Already fully completed — true idempotency, no re-dispatch needed.
+            if order.status == OrderStatus.COMPLETED:
                 logger.info(
-                    "Payment already processed, skipping duplicate webhook",
+                    "Order already completed, skipping duplicate webhook",
                     order_id=order_id,
-                    current_status=order.status.value,
                 )
                 return False
 
-            if order.status not in [OrderStatus.PENDING]:
+            # PAID or PROCESSING → payment was already confirmed, but topup task
+            # may not have been dispatched (e.g. Celery was down). Return True so
+            # the caller can re-dispatch the topup task.
+            if order.status in [OrderStatus.PAID, OrderStatus.PROCESSING]:
+                logger.info(
+                    "Re-processing webhook for already-paid order (topup may need re-dispatch)",
+                    order_id=order_id,
+                    current_status=order.status.value,
+                )
+                return True
+
+            if order.status != OrderStatus.PENDING:
                 logger.warning(
                     "Ignoring completed payment update for non-pending order",
                     order_id=order_id,
@@ -507,11 +517,11 @@ class OrderService:
 
             # Update order status to paid
             await self.order_repo.update_status(order_id, OrderStatus.PAID)
-            
+
             # Increment promocode usage
             if order.promocode_id:
                 await self.promocode_repo.increment_usage(order.promocode_id)
-            
+
             logger.info("Payment completed", order_id=order_id)
             return True
         elif payment_status == "failed":
@@ -566,7 +576,7 @@ class OrderService:
         if data.use_referral_balance and user_id and calculation.referral_discount > 0:
             await self.user_repo.deduct_referral_balance(user_id, calculation.referral_discount)
 
-        email = f"pubg_{data.uid}@xraytune.ru"
+        email = f"pubg_{data.uid}{GUEST_EMAIL_SUFFIX}"
 
         order = await self.order_repo.create(
             user_id=user_id,

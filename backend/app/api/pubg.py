@@ -5,6 +5,7 @@ from typing import Optional
 from app.core.database import get_db
 from app.core.security import get_current_user_id, get_optional_current_user_id, decode_access_token
 from app.core.config import settings
+from app.core.constants import GUEST_EMAIL_SUFFIX
 from app.repositories.user_repository import UserRepository
 from app.services.order_service import OrderService
 from app.services.auth_service import AuthService
@@ -43,13 +44,11 @@ async def create_pubg_order(
     if not user_id:
         cookie_token = request.cookies.get("guest_access_token")
         if cookie_token:
-            try:
-                payload = decode_access_token(cookie_token)
+            payload = decode_access_token(cookie_token)
+            if payload:
                 cookie_user_id = payload.get("sub")
                 if cookie_user_id is not None:
                     user_id = int(cookie_user_id)
-            except Exception:
-                user_id = None
 
     if not user_id:
         auth_service = AuthService(db)
@@ -57,18 +56,21 @@ async def create_pubg_order(
             order_seed=f"pubg_{data.uid}",
         )
         payload = decode_access_token(guest_access_token)
+        if not payload:
+            raise HTTPException(status_code=500, detail="Failed to create guest session")
         user_id = int(payload.get("sub"))
         user_repo = UserRepository(db)
         guest_user = await user_repo.get_by_id(user_id)
         if guest_expires_at:
             guest_ttl_seconds = max(60, int(settings.GUEST_SESSION_TTL_MINUTES) * 60)
+            is_prod = not settings.DEBUG
             response.set_cookie(
                 key="guest_access_token",
                 value=guest_access_token,
                 max_age=guest_ttl_seconds,
                 expires=guest_ttl_seconds,
                 httponly=False,
-                secure=False,
+                secure=is_prod,
                 samesite="lax",
                 path="/",
             )
@@ -78,7 +80,7 @@ async def create_pubg_order(
                 max_age=guest_ttl_seconds,
                 expires=guest_ttl_seconds,
                 httponly=False,
-                secure=False,
+                secure=is_prod,
                 samesite="lax",
                 path="/",
             )
@@ -86,7 +88,7 @@ async def create_pubg_order(
     antifraud = AntifraudService(db)
     await antifraud.perform_checks(
         steam_nickname=data.uid,
-        email=f"pubg_{data.uid}@xraytune.ru",
+        email=f"pubg_{data.uid}{GUEST_EMAIL_SUFFIX}",
         amount=0,
         user_id=user_id,
         ip_address=ip_address,
@@ -115,7 +117,7 @@ async def create_pubg_order_authenticated(
     antifraud = AntifraudService(db)
     await antifraud.perform_checks(
         steam_nickname=data.uid,
-        email=f"pubg_{data.uid}@xraytune.ru",
+        email=f"pubg_{data.uid}{GUEST_EMAIL_SUFFIX}",
         amount=0,
         user_id=user_id,
         ip_address=ip_address,

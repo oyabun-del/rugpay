@@ -80,13 +80,11 @@ async def create_apple_order(
     if not user_id:
         cookie_token = request.cookies.get("guest_access_token")
         if cookie_token:
-            try:
-                payload = decode_access_token(cookie_token)
+            payload = decode_access_token(cookie_token)
+            if payload:
                 cid = payload.get("sub")
                 if cid is not None:
                     user_id = int(cid)
-            except Exception:
-                user_id = None
 
     if not user_id:
         auth_service = AuthService(db)
@@ -94,18 +92,21 @@ async def create_apple_order(
             order_seed=f"apple_{data.voucher_id}",
         )
         payload = decode_access_token(guest_access_token)
+        if not payload:
+            raise HTTPException(status_code=500, detail="Failed to create guest session")
         user_id = int(payload.get("sub"))
         user_repo = UserRepository(db)
         guest_user = await user_repo.get_by_id(user_id)
         if guest_expires_at:
             guest_ttl_seconds = max(60, int(settings.GUEST_SESSION_TTL_MINUTES) * 60)
+            is_prod = not settings.DEBUG
             response.set_cookie(
                 key="guest_access_token",
                 value=guest_access_token,
                 max_age=guest_ttl_seconds,
                 expires=guest_ttl_seconds,
                 httponly=False,
-                secure=False,
+                secure=is_prod,
                 samesite="lax",
                 path="/",
             )
@@ -115,7 +116,7 @@ async def create_apple_order(
                 max_age=guest_ttl_seconds,
                 expires=guest_ttl_seconds,
                 httponly=False,
-                secure=False,
+                secure=is_prod,
                 samesite="lax",
                 path="/",
             )

@@ -2,12 +2,11 @@
 
 import { use, useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, CheckCircle2, XCircle, Clock, ArrowLeft } from 'lucide-react';
-import { paymentsApi, type PaymentOrderInfo } from '@/lib/api';
+import { paymentsApi, isTrustedPaymentUrl, type PaymentOrderInfo } from '@/lib/api';
 import { BrandLogo } from '@/components/brand-logo';
 
 type OrderStatus = 'pending' | 'paid' | 'processing' | 'completed' | 'failed';
@@ -49,14 +48,8 @@ function mapApiStatusToUi(status: string): OrderStatus {
   return 'pending';
 }
 
-function mapDisplayStatus(status: string, returnStatus: string | null): OrderStatus {
-  const apiStatus = mapApiStatusToUi(status);
-  if (returnStatus === 'fail') return 'failed';
-  if (returnStatus === 'success' && apiStatus === 'pending') {
-    // User has returned from successful payment redirect, but webhook/sync may still be catching up.
-    return 'paid';
-  }
-  return apiStatus;
+function mapDisplayStatus(status: string): OrderStatus {
+  return mapApiStatusToUi(status);
 }
 
 export default function PaymentPage({
@@ -65,8 +58,6 @@ export default function PaymentPage({
   params: Promise<{ orderId: string }>;
 }) {
   const { orderId } = use(params);
-  const searchParams = useSearchParams();
-  const returnStatus = searchParams.get('status');
   const [order, setOrder] = useState<(PaymentOrderInfo & { displayStatus: OrderStatus }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -76,7 +67,7 @@ export default function PaymentPage({
 
   useEffect(() => {
     const id = parseInt(orderId, 10);
-    if (Number.isNaN(id)) {
+    if (Number.isNaN(id) || id <= 0) {
       setLoading(false);
       setFetchError('Некорректный номер заказа');
       return;
@@ -92,7 +83,7 @@ export default function PaymentPage({
     const fetchOrder = async (isInitial = false) => {
       try {
         const { data } = await paymentsApi.getOrderForPage(id);
-        const displayStatus = mapDisplayStatus(data.status, returnStatus);
+        const displayStatus = mapDisplayStatus(data.status);
         setOrder({
           ...data,
           displayStatus,
@@ -117,7 +108,7 @@ export default function PaymentPage({
     }, POLL_INTERVAL_MS);
 
     return () => stopPolling();
-  }, [orderId, returnStatus]);
+  }, [orderId]);
 
   if (loading) {
     return (
@@ -162,7 +153,7 @@ export default function PaymentPage({
     setPayLoading(true);
     try {
       const { data } = await paymentsApi.getPayLink(order.id);
-      if (data.payment_url) {
+      if (data.payment_url && isTrustedPaymentUrl(data.payment_url)) {
         window.location.href = data.payment_url;
         return;
       }

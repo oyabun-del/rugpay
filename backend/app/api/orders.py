@@ -66,13 +66,11 @@ async def create_order(
     if not user_id:
         cookie_token = request.cookies.get("guest_access_token")
         if cookie_token:
-            try:
-                payload = decode_access_token(cookie_token)
+            payload = decode_access_token(cookie_token)
+            if payload:
                 cookie_user_id = payload.get("sub")
                 if cookie_user_id is not None:
                     user_id = int(cookie_user_id)
-            except Exception:
-                user_id = None
 
     # Create temporary user session for anonymous order flow.
     if not user_id:
@@ -81,19 +79,22 @@ async def create_order(
             order_seed=data.steam_nickname,
         )
         payload = decode_access_token(guest_access_token)
+        if not payload:
+            raise HTTPException(status_code=500, detail="Failed to create guest session")
         user_id = int(payload.get("sub"))
         user_repo = UserRepository(db)
         guest_user = await user_repo.get_by_id(user_id)
         if guest_expires_at:
             expires_iso = guest_expires_at.isoformat()
             guest_ttl_seconds = max(60, int(settings.GUEST_SESSION_TTL_MINUTES) * 60)
+            is_prod = not settings.DEBUG
             response.set_cookie(
                 key="guest_access_token",
                 value=guest_access_token,
                 max_age=guest_ttl_seconds,
                 expires=guest_ttl_seconds,
                 httponly=False,
-                secure=False,
+                secure=is_prod,
                 samesite="lax",
                 path="/",
             )
@@ -103,7 +104,7 @@ async def create_order(
                 max_age=guest_ttl_seconds,
                 expires=guest_ttl_seconds,
                 httponly=False,
-                secure=False,
+                secure=is_prod,
                 samesite="lax",
                 path="/",
             )

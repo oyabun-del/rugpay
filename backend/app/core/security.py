@@ -70,16 +70,13 @@ def decode_password_reset_token(token: str) -> str:
     return str(email)
 
 
-def decode_access_token(token: str) -> dict:
+def decode_access_token(token: str) -> Optional[dict]:
+    """Decode JWT token. Returns payload dict or None on failure."""
     try:
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
         return payload
     except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        return None
 
 
 async def get_current_user_id(
@@ -87,7 +84,13 @@ async def get_current_user_id(
 ) -> int:
     token = credentials.credentials
     payload = decode_access_token(token)
-    user_id: int = payload.get("sub")
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -101,9 +104,15 @@ async def get_current_admin_user_id(
 ) -> int:
     token = credentials.credentials
     payload = decode_access_token(token)
-    user_id: int = payload.get("sub")
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user_id = payload.get("sub")
     is_admin: bool = payload.get("is_admin", False)
-    
+
     if user_id is None or not is_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -118,9 +127,8 @@ async def get_optional_current_user_id(
     if not credentials:
         return None
     token = credentials.credentials
-    try:
-        payload = decode_access_token(token)
-    except HTTPException:
+    payload = decode_access_token(token)
+    if not payload:
         return None
     user_id: Any = payload.get("sub")
     if user_id is None:

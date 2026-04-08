@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Loader2, Wallet, User, Ticket, CheckCircle2, CircleAlert, Gift } from 'lucide-react';
-import { ordersApi, pubgApi, type PubgPackage } from '@/lib/api';
+import { ordersApi, pubgApi, isTrustedPaymentUrl, type PubgPackage } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
 
@@ -147,6 +147,18 @@ export function TopupForm() {
   const pubgDiscountMultiplier = 1 - pubgDiscountPercent / 100;
   const steamLoginRegex = /^[A-Za-z0-9]{2,32}$/;
   const pubgUidRegex = /^\d{5,20}$/;
+
+  // Realtime validation hints
+  const steamLoginTouched = steamNickname.length > 0;
+  const steamLoginError = steamLoginTouched && !steamLoginRegex.test(steamNickname)
+    ? 'Только английские буквы и цифры, 2-32 символа'
+    : '';
+  const amountTouched = amount.length > 0;
+  const amountError = amountTouched && numAmount < 100 ? 'Минимум 100 RUB' : '';
+  const pubgUidTouched = pubgUid.length > 0;
+  const pubgUidError = pubgUidTouched && !pubgUidRegex.test(pubgUid)
+    ? 'Только цифры, 5-20 символов'
+    : '';
   const extractApiErrorMessage = (err: unknown, fallback: string): string => {
     if (
       err &&
@@ -172,12 +184,12 @@ export function TopupForm() {
 
   const handleApplyPromo = async () => {
     if (!promocode.trim()) return;
-    
+
     try {
-      // Mock promo validation - replace with actual API call
-      if (promocode.toLowerCase() === 'steam10') {
+      const { data } = await ordersApi.validatePromocode(promocode.trim());
+      if (data.valid) {
         setPromoApplied(true);
-        setPromoDiscount(0.1); // 10% off commission
+        setPromoDiscount(data.discount || 0);
         toast({
           title: 'Промокод применен',
           description: 'Скидка на комиссию успешно активирована.',
@@ -194,6 +206,8 @@ export function TopupForm() {
         });
       }
     } catch {
+      setPromoApplied(false);
+      setPromoDiscount(0);
       toast({
         variant: 'destructive',
         title: 'Ошибка',
@@ -246,7 +260,7 @@ export function TopupForm() {
           await setSession(data.guest_access_token, data.guest_user ?? null);
         }
 
-        if (data.payment_url) {
+        if (data.payment_url && isTrustedPaymentUrl(data.payment_url)) {
           window.location.href = data.payment_url;
           return;
         }
@@ -319,7 +333,7 @@ export function TopupForm() {
         await setSession(data.guest_access_token, data.guest_user ?? null);
       }
 
-      if (data.payment_url) {
+      if (data.payment_url && isTrustedPaymentUrl(data.payment_url)) {
         window.location.href = data.payment_url;
         return;
       }
@@ -425,9 +439,13 @@ export function TopupForm() {
                   maxLength={32}
                   className={emphasizedInputClass}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Допустимо: английские буквы и цифры, без пунктуации (2-32 символа).
-                </p>
+                {steamLoginError ? (
+                  <p className="text-xs text-destructive">{steamLoginError}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Допустимо: английские буквы и цифры, без пунктуации (2-32 символа).
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -444,6 +462,7 @@ export function TopupForm() {
                   min="100"
                   className={emphasizedInputClass}
                 />
+                {amountError && <p className="text-xs text-destructive">{amountError}</p>}
               </div>
               </>
             ) : (
@@ -479,6 +498,7 @@ export function TopupForm() {
                   maxLength={20}
                   className={emphasizedInputClass}
                 />
+                {pubgUidError && <p className="text-xs text-destructive">{pubgUidError}</p>}
               </div>
 
               <div className="space-y-2">

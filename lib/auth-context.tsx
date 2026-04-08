@@ -69,7 +69,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (storedToken) {
       setToken(storedToken);
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch {
+          localStorage.removeItem('user');
+        }
       }
       refreshUser();
       setIsLoading(false);
