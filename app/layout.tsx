@@ -1,15 +1,23 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Exo_2, Unbounded } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/next';
 import { AuthProvider } from '@/lib/auth-context';
 import { ThemeProvider } from '@/components/theme-provider';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { SpotlightBackground } from '@/components/spotlight-background';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
 
-const _geist = Geist({ subsets: ['latin'] });
-const _geistMono = Geist_Mono({ subsets: ['latin'] });
+const exo2 = Exo_2({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
+const unbounded = Unbounded({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-display',
+  display: 'swap',
+});
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rugpay.ru'
 
@@ -53,13 +61,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" suppressHydrationWarning>
-      <body className="font-sans antialiased relative overflow-x-hidden">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <body className={`${exo2.variable} ${unbounded.variable} font-sans antialiased relative overflow-x-hidden`}>
+        <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark">
           <SpotlightBackground />
           <div className="relative z-10">
             <AuthProvider>
               {children}
-              <ThemeToggle />
               <Toaster />
             </AuthProvider>
           </div>

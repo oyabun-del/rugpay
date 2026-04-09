@@ -89,8 +89,9 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: var(--font-sans), 'Exo 2', sans-serif;
+  --font-display: var(--font-display), 'Unbounded', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -140,6 +141,10 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
   }
 }
 
@@ -216,6 +221,16 @@
   outline: 2.5px solid oklch(0.62 0.22 270 / 0);
   outline-offset: 0px;
   animation: form-highlight 2.2s ease-in-out;
+}
+
+/* Mobile menu slide-down animation */
+@keyframes menu-open {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-menu-open {
+  animation: menu-open 0.2s ease-out forwards;
 }
 
 /* Animated spotlight background */

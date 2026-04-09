@@ -52,13 +52,13 @@ export function Header() {
           <nav className="hidden md:flex items-center gap-6">
             <Link
               href="/#topup"
-              className="relative inline-flex items-center justify-center overflow-hidden rounded-md bg-primary/80 px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all duration-300 hover:bg-primary/90 before:absolute before:inset-0 before:bg-primary before:animate-[pulse_1.8s_ease-in-out_infinite]"
+              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all duration-300 hover:bg-primary/90 animate-[pulse_1.8s_ease-in-out_infinite]"
               onClick={(e) => {
                 e.preventDefault();
                 smoothScrollToAnchor('/#topup');
               }}
             >
-              <span className="relative z-10">Пополнить</span>
+              Пополнить
             </Link>
             <Link
               href="/#games"
@@ -147,7 +147,7 @@ export function Header() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border/40">
+          <div className="md:hidden py-4 border-t border-border/40 animate-menu-open">
             <nav className="flex flex-col gap-4">
               <a
                 href="mailto:gamecover@xraytune.ru"

@@ -78,7 +78,7 @@ export function Footer() {
             <div className="mt-6">
               <h4 className="font-semibold mb-2 text-sm">Поддержка</h4>
               <a
-                href="mailto:support@steampay.ru"
+                href="mailto:gamecover@xraytune.ru"
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Mail className="h-4 w-4" />
@@ -89,7 +89,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-border/40 mt-12 pt-8 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} gameCover. Все права защищены.</p>
+          <p>&copy; {new Date().getFullYear()} RugPay. Все права защищены.</p>
         </div>
       </div>
     </footer>
