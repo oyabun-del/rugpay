@@ -591,6 +591,45 @@ export function TopupForm() {
             )}
           </div>
 
+          {formMode === 'pubg' && selectedPubgUc && (() => {
+            const pkg = pubgPackages.find((p) => p.uc === selectedPubgUc);
+            if (!pkg?.price_rub) return null;
+            const basePrice = pkg.price_rub;
+            const finalPrice = Math.round(basePrice * pubgDiscountMultiplier);
+            return (
+              <div className="rounded-xl border border-border/50 bg-muted/30 px-5 py-4 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Пакет</span>
+                  <span className="font-medium">{pkg.uc} UC</span>
+                </div>
+                {pubgDiscountPercent > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      Скидка
+                      <span className="text-green-500 font-medium">-{pubgDiscountPercent}%</span>
+                    </span>
+                    <span className="line-through text-muted-foreground">
+                      {basePrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                    </span>
+                  </div>
+                )}
+                <div className="border-t border-border/50 pt-3 flex justify-between items-center">
+                  <span className="font-semibold">Итого к оплате</span>
+                  <div className="flex flex-col items-end gap-0.5">
+                    {pubgDiscountPercent > 0 && (
+                      <span className="text-xs text-muted-foreground line-through font-normal">
+                        {basePrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                      </span>
+                    )}
+                    <span className="inline-flex items-center rounded-lg bg-primary px-3 py-1 text-primary-foreground font-bold text-lg shadow">
+                      {finalPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {formMode === 'steam' && numAmount > 0 && (
             <div className="rounded-lg bg-secondary/50 p-4 space-y-2">
               <div className="flex justify-between text-sm">
