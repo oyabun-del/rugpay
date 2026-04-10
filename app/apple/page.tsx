@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Mail, AlertTriangle, X, Check, ChevronDown, Tag } from 'lucide-react';
+import { Loader2, Mail, AlertTriangle, X, Check, ChevronDown, Tag, Smartphone, LogIn, Gift, CreditCard } from 'lucide-react';
 import Image from 'next/image';
 
 const PRIORITY_REGIONS = ['RU', 'US', 'TR'];
@@ -145,7 +145,7 @@ function RegionCard({
     <button
       type="button"
       onClick={onClick}
-      className={`relative rounded-xl border px-3 py-3 text-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring min-w-0
+      className={`relative rounded-xl border px-3 py-3 text-center transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring min-w-0
         ${selected
           ? 'border-primary bg-primary/10 text-primary'
           : 'border-border/50 bg-card/60 hover:border-primary/50 hover:bg-card text-foreground'
@@ -243,7 +243,7 @@ function VoucherCard({
     <button
       type="button"
       onClick={onClick}
-      className={`relative rounded-xl border px-3 py-3 text-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring
+      className={`relative rounded-xl border px-3 py-3 text-center transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
         ${selected
           ? 'border-primary bg-primary/10 text-primary'
           : 'border-border/50 bg-card/60 hover:border-primary/50 hover:bg-card text-foreground'
@@ -423,28 +423,67 @@ export default function ApplePage() {
               </Card>
             )}
 
+            {/* Activation instructions */}
+            <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+              <CardContent className="pt-6 space-y-4">
+                <p className="text-base font-semibold">Как активировать Apple Gift Card</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { icon: Smartphone, step: '1', title: 'Откройте App Store', desc: 'На iPhone, iPad или Mac откройте приложение App Store' },
+                    { icon: LogIn, step: '2', title: 'Войдите в аккаунт', desc: 'Убедитесь, что регион Apple ID совпадает с регионом карты' },
+                    { icon: CreditCard, step: '3', title: 'Погасить код', desc: 'Нажмите «Погасить подарочную карту или код» и введите код' },
+                    { icon: Gift, step: '4', title: 'Готово!', desc: 'Средства зачислены на баланс Apple ID. Покупайте приложения, игры и подписки' },
+                  ].map((item) => (
+                    <div key={item.step} className="flex gap-3 rounded-xl border border-border/50 bg-muted/20 p-3">
+                      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 shrink-0">
+                        <item.icon className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold leading-tight">{item.title}</p>
+                        <p className="text-xs text-muted-foreground leading-snug mt-0.5">{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Summary + submit */}
             <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
               <CardContent className="pt-6 space-y-4">
                 {selectedVoucherData && (
-                  <div className="rounded-xl border border-border/50 bg-muted/30 px-4 py-3 text-sm space-y-1">
-                    <div className="flex justify-between">
+                  <div className="rounded-xl border border-border/50 bg-muted/30 px-5 py-4 space-y-3">
+                    <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Карта</span>
                       <span className="font-medium">{cleanVoucherName(selectedVoucherData.name)}</span>
                     </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Регион</span>
+                      <span className="font-medium">{regionCode}</span>
+                    </div>
                     {discountPercent > 0 && selectedVoucherData.discountedPrice < selectedVoucherData.finalPrice && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Без скидки</span>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          Скидка
+                          <span className="text-green-500 font-medium">-{discountPercent}%</span>
+                        </span>
                         <span className="line-through text-muted-foreground">
                           {selectedVoucherData.finalPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
                         </span>
                       </div>
                     )}
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Итого к оплате</span>
-                      <span className="inline-flex items-center rounded-lg bg-primary px-3 py-1 text-primary-foreground font-bold text-lg shadow">
-                        {selectedVoucherData.discountedPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
-                      </span>
+                    <div className="border-t border-border/50 pt-3 flex justify-between items-center">
+                      <span className="font-semibold">Итого к оплате</span>
+                      <div className="flex flex-col items-end gap-0.5">
+                        {discountPercent > 0 && selectedVoucherData.discountedPrice < selectedVoucherData.finalPrice && (
+                          <span className="text-xs text-muted-foreground line-through font-normal">
+                            {selectedVoucherData.finalPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                          </span>
+                        )}
+                        <span className="inline-flex items-center rounded-lg bg-primary px-3 py-1 text-primary-foreground font-bold text-lg shadow">
+                          {selectedVoucherData.discountedPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}

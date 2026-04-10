@@ -513,11 +513,11 @@ export function TopupForm() {
                       type="button"
                       onClick={() => pkg.enabled && setSelectedPubgUc(pkg.uc)}
                       disabled={!pkg.enabled}
-                      className={`relative min-h-[96px] rounded-lg border p-3.5 pr-10 text-left transition ${
+                      className={`relative min-h-[96px] rounded-lg border p-3.5 pr-10 text-left transition-colors duration-200 ${
                         selectedPubgUc === pkg.uc
                           ? 'border-primary bg-primary/10'
                           : 'border-border bg-background/40'
-                      } ${pkg.enabled ? 'hover:border-primary/60' : 'opacity-50 cursor-not-allowed'}`}
+                      } ${pkg.enabled ? 'cursor-pointer hover:border-primary/60' : 'opacity-50 cursor-not-allowed'}`}
                     >
                       {selectedPubgUc === pkg.uc && pkg.enabled && (
                         <CheckCircle2 className="absolute right-2 top-2 h-4 w-4 text-primary" />
@@ -535,18 +535,7 @@ export function TopupForm() {
                             style={{ color: '#FFD700', textShadow: '0 1px 6px rgba(255,215,0,0.35)' }}>
                             {pkg.uc} UC
                           </span>
-                          {pkg.price_rub ? (
-                            <div className="flex items-center gap-1.5 flex-nowrap whitespace-nowrap">
-                              <span className="text-sm text-primary font-semibold">
-                                {Math.round(pkg.price_rub * pubgDiscountMultiplier)} ₽
-                              </span>
-                              <span className="text-xs text-muted-foreground line-through">
-                                {pkg.price_rub} ₽
-                              </span>
-                            </div>
-                          ) : pkg.enabled ? (
-                            <span className="text-xs text-muted-foreground">Цена обновляется...</span>
-                          ) : (
+                          {!pkg.enabled && (
                             <span className="text-xs text-muted-foreground">Скоро</span>
                           )}
                         </div>

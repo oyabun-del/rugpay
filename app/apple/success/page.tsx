@@ -6,7 +6,7 @@ import { Header } from '@/components/landing/header';
 import { Footer } from '@/components/landing/footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle, Mail, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Mail, ArrowLeft, Smartphone, LogIn, Gift, CreditCard } from 'lucide-react';
 
 export default function AppleSuccessPage() {
   return (
@@ -34,6 +34,28 @@ export default function AppleSuccessPage() {
               <div className="flex items-center justify-center gap-2 text-sm">
                 <Mail className="h-4 w-4 text-primary" />
                 <span className="text-muted-foreground">Проверьте почту, включая папку «Спам»</span>
+              </div>
+            </div>
+
+            <div className="text-left space-y-3 pt-2">
+              <p className="text-sm font-semibold text-center">Как активировать карту</p>
+              <div className="space-y-2">
+                {[
+                  { icon: Smartphone, step: '1', title: 'Откройте App Store', desc: 'На iPhone, iPad или Mac' },
+                  { icon: LogIn, step: '2', title: 'Войдите в аккаунт', desc: 'Регион Apple ID должен совпадать с регионом карты' },
+                  { icon: CreditCard, step: '3', title: 'Погасить код', desc: '«Погасить подарочную карту или код» → введите код из письма' },
+                  { icon: Gift, step: '4', title: 'Готово!', desc: 'Средства на балансе Apple ID' },
+                ].map((item) => (
+                  <div key={item.step} className="flex gap-3 rounded-lg border border-border/50 bg-muted/20 p-2.5">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 border border-primary/20 shrink-0">
+                      <item.icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium leading-tight">{item.title}</p>
+                      <p className="text-xs text-muted-foreground leading-snug">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
