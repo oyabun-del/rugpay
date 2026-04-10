@@ -114,6 +114,8 @@ def _resolve_order_kind(order_id: int) -> str:
         order = session.query(Order).filter(Order.id == order_id).first()
         if order and order.order_type == OrderType.PUBG:
             return "pubg_topup"
+        if order and order.order_type == OrderType.APPLE:
+            return "apple_voucher"
         return "steam_topup"
     finally:
         session.close()
@@ -135,6 +137,9 @@ def drain_resilient_order_queue(max_items: int = 100) -> dict:
             if kind == "pubg_topup":
                 from app.tasks.pubg_tasks import process_pubg_topup
                 process_pubg_topup.delay(order_id)
+            elif kind == "apple_voucher":
+                from app.tasks.apple_tasks import request_apple_voucher
+                request_apple_voucher.delay(order_id)
             elif kind == "steam_topup":
                 from app.tasks.steam_tasks import process_steam_topup
                 process_steam_topup.delay(order_id)

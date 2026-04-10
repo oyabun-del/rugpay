@@ -94,6 +94,37 @@ class WataVoucherService:
             })
         return {"details": data.get("details", {}), "vouchers": vouchers}
 
+    async def get_order_status(self, wata_order_id: str) -> dict:
+        """
+        Get Wata DG voucher order status.
+        Calling this endpoint also triggers voucher delivery on Wata side.
+        Returns dict with keys: orderId, status, vouchers, amount, etc.
+        Status values: Pending, Paid, Success, Fail.
+        """
+        request_url = f"{self.base_url}/v3/vouchers/order/{wata_order_id}"
+        logger.info("Wata DG API request — get order status", request_url=request_url, wata_order_id=wata_order_id)
+        async with httpx.AsyncClient(timeout=TIMEOUT) as client:
+            response = await client.get(request_url, headers=self._headers())
+
+        if response.status_code not in (200, 201):
+            logger.error(
+                "Wata DG get order status failed",
+                status=response.status_code,
+                response_body=response.text,
+                wata_order_id=wata_order_id,
+            )
+            raise RuntimeError(f"Wata DG order status API error {response.status_code}: {response.text}")
+
+        data = response.json()
+        logger.info(
+            "Wata DG API response — order status",
+            wata_order_id=wata_order_id,
+            status=data.get("status"),
+            vouchers_count=len(data.get("vouchers") or []),
+            response_body=response.text,
+        )
+        return data
+
     async def create_order(
         self,
         voucher_id: str,

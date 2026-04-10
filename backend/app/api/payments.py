@@ -77,9 +77,13 @@ def _enqueue_order_fallback(order_id: int, kind: str = "steam_topup") -> None:
 def _dispatch_topup_task(order_id: int, order_type: str) -> None:
     """Dispatch the correct Celery task based on order type, with resilient queue fallback."""
     if order_type == OrderType.APPLE:
-        # Apple voucher codes are delivered by Wata directly to the customer email.
-        # No Celery task needed — order is already marked completed by the webhook.
-        logger.info("Apple order completed (voucher delivered by Wata)", order_id=order_id)
+        try:
+            from app.tasks.apple_tasks import request_apple_voucher
+            request_apple_voucher.delay(order_id)
+            logger.info("Apple voucher request task queued", order_id=order_id)
+        except Exception as e:
+            logger.warning("Celery Apple voucher enqueue failed, queued fallback", order_id=order_id, error=str(e))
+            _enqueue_order_fallback(order_id, "apple_voucher")
         return
     kind = "pubg_topup" if order_type == OrderType.PUBG else "steam_topup"
     try:
@@ -401,6 +405,57 @@ async def get_order_for_payment_page(
                 elif yk_status == "canceled":
                     await service.process_payment_webhook(order.id, "failed", yookassa_payment_id)
                     order = await repo.get_by_id(order_id)
+
+    # Fallback sync with Wata DG order status (Apple orders only).
+    # Calls GET /api/v3/vouchers/order/{id} to request/check voucher delivery.
+    if (
+        order.order_type == OrderType.APPLE
+        and order.status in [OrderStatus.PENDING, OrderStatus.PAID, OrderStatus.PROCESSING]
+        and order.apple_wata_order_id
+    ):
+        from app.services.wata_voucher_service import WataVoucherService
+
+        voucher_svc = WataVoucherService()
+        try:
+            dg_order = await voucher_svc.get_order_status(order.apple_wata_order_id)
+            dg_status = (dg_order.get("status") or "").strip()
+            voucher_codes = dg_order.get("vouchers") or []
+
+            if dg_status == "Success" and voucher_codes:
+                codes_str = ", ".join(voucher_codes)
+                # Mark payment as completed if still pending
+                if order.status == OrderStatus.PENDING:
+                    service = OrderService(db)
+                    success = await service.process_payment_webhook(
+                        order.id, "completed", f"wata-dg-{order.apple_wata_order_id}",
+                    )
+                    if success:
+                        _dispatch_topup_task(order.id, order.order_type)
+                # Mark order as completed with voucher codes
+                await repo.update_status(order.id, OrderStatus.COMPLETED)
+                order = await repo.get_by_id(order_id)
+                if order:
+                    order.steam_response = f"apple_voucher_codes:{codes_str}"
+                    await db.commit()
+                    await db.refresh(order)
+            elif dg_status == "Fail":
+                await repo.update_status(order.id, OrderStatus.FAILED)
+                order = await repo.get_by_id(order_id)
+                if order:
+                    order.steam_response = f"apple_voucher_fail:{dg_status}"
+                    await db.commit()
+                    await db.refresh(order)
+            elif dg_status == "Paid" and order.status == OrderStatus.PENDING:
+                # Payment confirmed on Wata side but we haven't processed it yet
+                service = OrderService(db)
+                success = await service.process_payment_webhook(
+                    order.id, "completed", f"wata-dg-{order.apple_wata_order_id}",
+                )
+                if success:
+                    _dispatch_topup_task(order.id, order.order_type)
+                order = await repo.get_by_id(order_id)
+        except Exception as e:
+            logger.warning("Apple DG order status fallback failed", order_id=order_id, error=str(e))
 
     # Sync with Wata Steam DG order status (Steam orders only).
     if (
