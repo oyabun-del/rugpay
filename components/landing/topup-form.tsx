@@ -615,16 +615,9 @@ export function TopupForm() {
                 )}
                 <div className="border-t border-border/50 pt-3 flex justify-between items-center">
                   <span className="font-semibold">Итого к оплате</span>
-                  <div className="flex flex-col items-end gap-0.5">
-                    {pubgDiscountPercent > 0 && (
-                      <span className="text-xs text-muted-foreground line-through font-normal">
-                        {basePrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
-                      </span>
-                    )}
                     <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 text-primary-foreground font-extrabold text-xl tracking-tight shadow-lg shadow-primary/25">
                       {finalPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
                     </span>
-                  </div>
                 </div>
               </div>
             );
@@ -647,14 +640,9 @@ export function TopupForm() {
               </div>
               <div className="border-t border-border pt-2 flex justify-between items-center font-semibold">
                 <span>Итого</span>
-                <div className="flex flex-col items-end gap-0.5">
-                  <span className="text-xs text-muted-foreground line-through font-normal">
-                    {finalAmount.toFixed(2)} RUB
-                  </span>
                   <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 text-primary-foreground font-extrabold text-xl tracking-tight shadow-lg shadow-primary/25">
                     {(finalAmount * steamDiscountMultiplier).toFixed(2)} RUB
                   </span>
-                </div>
               </div>
             </div>
           )}

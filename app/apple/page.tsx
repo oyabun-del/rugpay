@@ -474,16 +474,9 @@ export default function ApplePage() {
                     )}
                     <div className="border-t border-border/50 pt-3 flex justify-between items-center">
                       <span className="font-semibold">Итого к оплате</span>
-                      <div className="flex flex-col items-end gap-0.5">
-                        {discountPercent > 0 && selectedVoucherData.discountedPrice < selectedVoucherData.finalPrice && (
-                          <span className="text-xs text-muted-foreground line-through font-normal">
-                            {selectedVoucherData.finalPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
-                          </span>
-                        )}
-                        <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 text-primary-foreground font-extrabold text-xl tracking-tight shadow-lg shadow-primary/25">
-                          {selectedVoucherData.discountedPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
-                        </span>
-                      </div>
+                      <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 text-primary-foreground font-extrabold text-xl tracking-tight shadow-lg shadow-primary/25">
+                        {selectedVoucherData.discountedPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                      </span>
                     </div>
                   </div>
                 )}
