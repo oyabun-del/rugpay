@@ -480,7 +480,7 @@ export default function ApplePage() {
                             {selectedVoucherData.finalPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
                           </span>
                         )}
-                        <span className="inline-flex items-center rounded-lg bg-primary px-3 py-1 text-primary-foreground font-bold text-lg shadow">
+                        <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 text-primary-foreground font-extrabold text-xl tracking-tight shadow-lg shadow-primary/25">
                           {selectedVoucherData.discountedPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
                         </span>
                       </div>

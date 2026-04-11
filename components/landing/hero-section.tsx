@@ -77,9 +77,9 @@ export function HeroSection() {
 
       <div className="container mx-auto px-4 py-12 3xl:max-w-[1800px] 4xl:max-w-[2400px]">
         <div className="grid lg:grid-cols-[1.45fr_0.75fr] gap-6 md:gap-8 lg:gap-[45px] 3xl:gap-[60px] items-center">
-          {/* Mobile banner — 45vh */}
+          {/* Mobile banner — clickable link wrapper */}
           <div className="block lg:hidden w-full">
-            <div className="relative h-[28vh] overflow-hidden rounded-2xl border border-border/50 bg-card/70">
+            <Link href={currentSlide?.button_link || '/#topup'} className="block relative h-[28vh] overflow-hidden rounded-2xl border border-border/50 bg-card/70 cursor-pointer">
               {currentSlide ? (
                 slides.map((slide, idx) => (
                   <Image
@@ -104,20 +104,13 @@ export function HeroSection() {
                 >
                   {currentSlide?.title || 'Пополняй баланс Steam и PUBG Mobile'}
                 </h2>
-                {currentSlide?.button_text && (
-                  <Link href={currentSlide.button_link || '/#topup'}>
-                    <Button size="lg" className="mt-3 cursor-pointer">
-                      {currentSlide.button_text}
-                    </Button>
-                  </Link>
-                )}
                 <div className="mt-3 flex justify-center gap-2">
                   {slides.map((slide, idx) => (
                     <button
                       key={slide.id}
                       type="button"
                       aria-label={`Слайд ${idx + 1}`}
-                      onClick={() => setActiveIndex(idx)}
+                      onClick={(e) => { e.preventDefault(); setActiveIndex(idx); }}
                       className={`h-2 rounded-full transition-all ${
                         idx === activeIndex ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/80'
                       }`}
@@ -125,7 +118,7 @@ export function HeroSection() {
                   ))}
                 </div>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* Desktop banner */}
