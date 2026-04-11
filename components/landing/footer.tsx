@@ -12,8 +12,8 @@ export function Footer() {
               <BrandLogo />
             </div>
             <p className="text-muted-foreground text-sm max-w-md">
-              Быстрый и безопасный сервис пополнения Steam. Выгодные условия
-              и моментальная обработка для игроков.
+              Быстрый и безопасный сервис пополнения Steam, PUBG Mobile
+              и покупки Apple Gift Card. Выгодные условия и моментальная обработка.
             </p>
           </div>
 

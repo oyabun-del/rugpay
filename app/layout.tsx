@@ -21,6 +21,21 @@ const unbounded = Unbounded({
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://rugpay.ru'
 
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'RugPay',
+  url: BASE_URL,
+  logo: `${BASE_URL}/logo.png`,
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: 'gamecover@xraytune.ru',
+    contactType: 'customer service',
+    availableLanguage: 'Russian',
+  },
+  sameAs: [],
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
@@ -62,6 +77,10 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <body className={`${exo2.variable} ${unbounded.variable} font-sans antialiased relative overflow-x-hidden`}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
         <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark">
           <SpotlightBackground />
           <div className="relative z-10">
