@@ -320,8 +320,18 @@ export const pubgApi = {
   }) => api.post<CreatePubgOrderResponse>('/pubg/create/auth', data),
 };
 
+export interface FormSettings {
+  steam_enabled: boolean;
+  pubg_enabled: boolean;
+  apple_enabled: boolean;
+}
+
 export const bannerApi = {
   getSlides: () => api.get<BannerSlide[]>('/banner/slides'),
+};
+
+export const settingsApi = {
+  getFormSettings: () => api.get<FormSettings>('/settings/forms'),
 };
 
 // Apple Gift Card API
@@ -445,6 +455,11 @@ export const adminApi = {
 
   deleteBannerSlide: (slideId: number) =>
     api.delete(`/admin/banner/slides/${slideId}`),
+
+  getFormSettings: () => api.get<FormSettings>('/admin/settings/forms'),
+
+  updateFormSettings: (data: Partial<FormSettings>) =>
+    api.patch<FormSettings>('/admin/settings/forms', data),
 };
 
 export default api;

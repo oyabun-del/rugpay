@@ -1,17 +1,35 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
+import { settingsApi, type FormSettings } from '@/lib/api';
 
-const games = [
-  { name: 'Steam', image: '/game-steam.png', comingSoon: false, mode: 'steam' },
-  { name: 'Pubg Mobile', image: '/game-pubg.png', comingSoon: false, mode: 'pubg' },
-  { name: 'Подарочная карта Apple', image: '/game-apple.png', comingSoon: false, href: '/apple' },
+const ALL_GAMES = [
+  { name: 'Steam', image: '/game-steam.png', mode: 'steam', settingsKey: 'steam_enabled' as keyof FormSettings },
+  { name: 'Pubg Mobile', image: '/game-pubg.png', mode: 'pubg', settingsKey: 'pubg_enabled' as keyof FormSettings },
+  { name: 'Подарочная карта Apple', image: '/game-apple.png', href: '/apple', settingsKey: 'apple_enabled' as keyof FormSettings },
   { name: 'Roblox', image: '/game-roblox.png', comingSoon: true },
 ];
 
 export function GamesSection() {
+  const [formSettings, setFormSettings] = useState<FormSettings>({ steam_enabled: true, pubg_enabled: true, apple_enabled: true });
+
+  useEffect(() => {
+    settingsApi.getFormSettings()
+      .then(({ data }) => setFormSettings(data))
+      .catch(() => {});
+  }, []);
+
+  const games = ALL_GAMES.map((game) => {
+    if ('settingsKey' in game && game.settingsKey) {
+      const enabled = formSettings[game.settingsKey];
+      return { ...game, comingSoon: !enabled };
+    }
+    return game;
+  });
+
   return (
     <section id="games" className="py-16 bg-secondary/30 scroll-mt-20">
       <div className="container mx-auto px-4">

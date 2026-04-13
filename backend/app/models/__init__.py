@@ -5,6 +5,7 @@ from .promocode import Promocode, DiscountType
 from .referral import Referral
 from .stats import Stats
 from .banner_slide import BannerSlide
+from .site_settings import SiteSettings
 
 __all__ = [
     "User",
@@ -18,4 +19,5 @@ __all__ = [
     "Referral",
     "Stats",
     "BannerSlide",
+    "SiteSettings",
 ]

@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Loader2, Wallet, User, Ticket, CheckCircle2, CircleAlert, Gift } from 'lucide-react';
-import { ordersApi, pubgApi, isTrustedPaymentUrl, type PubgPackage } from '@/lib/api';
+import { ordersApi, pubgApi, settingsApi, isTrustedPaymentUrl, type PubgPackage, type FormSettings } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,6 +30,7 @@ export function TopupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setSession } = useAuth();
+  const [formSettings, setFormSettings] = useState<FormSettings>({ steam_enabled: true, pubg_enabled: true, apple_enabled: true });
   const [formMode, setFormMode] = useState<FormMode>('steam');
   const cardRef = useRef<HTMLDivElement>(null);
   const [highlight, setHighlight] = useState(false);
@@ -82,6 +83,17 @@ export function TopupForm() {
   }, []);
 
   useEffect(() => {
+    settingsApi.getFormSettings()
+      .then(({ data }) => {
+        setFormSettings(data);
+        if (!data.steam_enabled && data.pubg_enabled) {
+          setFormMode('pubg');
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const ref = searchParams.get('ref');
     if (ref) {
       localStorage.setItem('referral_code', ref);
@@ -90,10 +102,12 @@ export function TopupForm() {
 
   useEffect(() => {
     const game = (searchParams.get('game') || '').toLowerCase();
-    if (game === 'steam' || game === 'pubg') {
-      setFormMode(game);
+    if (game === 'steam' && formSettings.steam_enabled) {
+      setFormMode('steam');
+    } else if (game === 'pubg' && formSettings.pubg_enabled) {
+      setFormMode('pubg');
     }
-  }, [searchParams]);
+  }, [searchParams, formSettings]);
 
   useEffect(() => {
     const loadPricingConfig = async () => {
@@ -351,40 +365,55 @@ export function TopupForm() {
     }
   };
 
+  if (!formSettings.steam_enabled && !formSettings.pubg_enabled) {
+    return (
+      <Card ref={cardRef} className="w-full max-w-[31rem] 3xl:max-w-[38rem] 4xl:max-w-[48rem] h-auto lg:min-h-[620px] 3xl:min-h-[780px] 4xl:min-h-[1000px] border-border/50 bg-card/80 shadow-lg backdrop-blur-sm rounded-2xl flex items-center justify-center">
+        <CardContent className="text-center space-y-3 py-12">
+          <p className="text-lg font-semibold text-muted-foreground">Формы пополнения временно недоступны</p>
+          <p className="text-sm text-muted-foreground">Попробуйте позже</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card ref={cardRef} className={`w-full max-w-[31rem] 3xl:max-w-[38rem] 4xl:max-w-[48rem] h-auto lg:min-h-[620px] 3xl:min-h-[780px] 4xl:min-h-[1000px] border-border/50 bg-card/80 shadow-lg backdrop-blur-sm rounded-2xl ${highlight ? 'animate-form-highlight' : ''}`}>
       <CardHeader className="space-y-1">
-        <div className="grid grid-cols-2 gap-2 pb-2">
-          <Button
-            type="button"
-            variant={formMode === 'steam' ? 'default' : 'outline'}
-            onClick={() => setFormMode('steam')}
-            className="w-full justify-center gap-2"
-          >
-            <Image
-              src="/steam-logo.png"
-              alt="Steam"
-              width={18}
-              height={18}
-              className="h-4.5 w-4.5 rounded-sm object-cover"
-            />
-            <span>Steam</span>
-          </Button>
-          <Button
-            type="button"
-            variant={formMode === 'pubg' ? 'default' : 'outline'}
-            onClick={() => setFormMode('pubg')}
-            className="w-full justify-center gap-2"
-          >
-            <Image
-              src="/pubg-mobile-logo.png"
-              alt="PUBG Mobile"
-              width={18}
-              height={18}
-              className="h-4.5 w-4.5 rounded-sm object-cover"
-            />
-            <span>PUBG Mobile</span>
-          </Button>
+        <div className={`grid gap-2 pb-2 ${formSettings.steam_enabled && formSettings.pubg_enabled ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          {formSettings.steam_enabled && (
+            <Button
+              type="button"
+              variant={formMode === 'steam' ? 'default' : 'outline'}
+              onClick={() => setFormMode('steam')}
+              className="w-full justify-center gap-2"
+            >
+              <Image
+                src="/steam-logo.png"
+                alt="Steam"
+                width={18}
+                height={18}
+                className="h-4.5 w-4.5 rounded-sm object-cover"
+              />
+              <span>Steam</span>
+            </Button>
+          )}
+          {formSettings.pubg_enabled && (
+            <Button
+              type="button"
+              variant={formMode === 'pubg' ? 'default' : 'outline'}
+              onClick={() => setFormMode('pubg')}
+              className="w-full justify-center gap-2"
+            >
+              <Image
+                src="/pubg-mobile-logo.png"
+                alt="PUBG Mobile"
+                width={18}
+                height={18}
+                className="h-4.5 w-4.5 rounded-sm object-cover"
+              />
+              <span>PUBG Mobile</span>
+            </Button>
+          )}
         </div>
         <CardTitle className="text-2xl font-bold text-center">
           {formMode === 'steam' ? 'Пополнение Steam' : 'PUBG Mobile UC'}

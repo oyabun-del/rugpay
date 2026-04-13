@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { appleApi, isTrustedPaymentUrl, type AppleRegion, type AppleVoucher } from '@/lib/api';
+import { appleApi, settingsApi, isTrustedPaymentUrl, type AppleRegion, type AppleVoucher } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { Header } from '@/components/landing/header';
 import { Footer } from '@/components/landing/footer';
@@ -268,6 +268,7 @@ export default function ApplePage() {
   const { setSession } = useAuth();
 
   const [showWarning, setShowWarning] = useState(false);
+  const [formDisabled, setFormDisabled] = useState(false);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [regions, setRegions] = useState<AppleRegion[]>([]);
   const [vouchers, setVouchers] = useState<AppleVoucher[]>([]);
@@ -282,6 +283,9 @@ export default function ApplePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    settingsApi.getFormSettings()
+      .then(({ data }) => { if (!data.apple_enabled) setFormDisabled(true); })
+      .catch(() => {});
     appleApi.getConfig().then(({ data }) => setDiscountPercent(data.discount_percent)).catch(() => {});
     appleApi
       .getRegions()
@@ -342,6 +346,22 @@ export default function ApplePage() {
       setSubmitting(false);
     }
   };
+
+  if (formDisabled) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 relative z-10 flex items-center justify-center">
+          <div className="text-center space-y-3 py-12">
+            <p className="text-lg font-semibold text-muted-foreground">Apple Gift Card временно недоступен</p>
+            <p className="text-sm text-muted-foreground">Попробуйте позже</p>
+            <Button variant="outline" onClick={() => router.push('/')}>На главную</Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

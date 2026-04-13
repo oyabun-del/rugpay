@@ -12,7 +12,9 @@ from app.schemas.promocode import PromocodeCreate, PromocodeResponse
 from app.schemas.auth import UserResponse
 from app.schemas.stats import AdminStats
 from app.schemas.banner import BannerSlideResponse, BannerSlideCreate, BannerSlideUpdate
+from app.schemas.site_settings import SiteSettingsResponse, SiteSettingsUpdate
 from app.repositories.banner_repository import BannerRepository
+from app.repositories.site_settings_repository import SiteSettingsRepository
 
 router = APIRouter()
 
@@ -218,3 +220,31 @@ async def delete_banner_slide(
             detail="Banner slide not found",
         )
     return {"status": "ok"}
+
+
+@router.get("/settings/forms", response_model=SiteSettingsResponse)
+async def get_form_settings(
+    admin_id: int = Depends(get_current_admin_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    repo = SiteSettingsRepository(db)
+    settings = await repo.get()
+    return SiteSettingsResponse.model_validate(settings)
+
+
+@router.patch("/settings/forms", response_model=SiteSettingsResponse)
+async def update_form_settings(
+    data: SiteSettingsUpdate,
+    admin_id: int = Depends(get_current_admin_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    repo = SiteSettingsRepository(db)
+    kwargs: dict = {}
+    if data.steam_enabled is not None:
+        kwargs["steam_enabled"] = data.steam_enabled
+    if data.pubg_enabled is not None:
+        kwargs["pubg_enabled"] = data.pubg_enabled
+    if data.apple_enabled is not None:
+        kwargs["apple_enabled"] = data.apple_enabled
+    settings = await repo.update(**kwargs)
+    return SiteSettingsResponse.model_validate(settings)

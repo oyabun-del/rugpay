@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { adminApi, authApi, type BannerSlide, type User } from '@/lib/api';
+import { adminApi, authApi, type BannerSlide, type FormSettings, type User } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BrandLogo } from '@/components/brand-logo';
+import { Switch } from '@/components/ui/switch';
 import {
   Loader2,
   Mail,
@@ -22,6 +23,7 @@ import {
   X,
   Eye,
   EyeOff,
+  Settings,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -510,6 +512,80 @@ function BannersTab() {
 }
 
 // ---------------------------------------------------------------------------
+// Form settings tab
+// ---------------------------------------------------------------------------
+
+const FORM_ITEMS: { key: keyof FormSettings; label: string; description: string }[] = [
+  { key: 'steam_enabled', label: 'Steam', description: 'Форма пополнения Steam на главной странице' },
+  { key: 'pubg_enabled', label: 'PUBG Mobile', description: 'Форма покупки PUBG Mobile UC на главной странице' },
+  { key: 'apple_enabled', label: 'Apple Gift Card', description: 'Страница покупки Apple Gift Card (/apple)' },
+];
+
+function FormSettingsTab() {
+  const [settings, setSettings] = useState<FormSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    adminApi
+      .getFormSettings()
+      .then(({ data }) => setSettings(data))
+      .catch(() => setError('Не удалось загрузить настройки'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleToggle = async (key: keyof FormSettings, value: boolean) => {
+    if (!settings) return;
+    setSaving(key);
+    try {
+      const { data } = await adminApi.updateFormSettings({ [key]: value });
+      setSettings(data);
+    } catch {
+      setError('Не удалось обновить настройку');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  if (error && !settings) return <p className="text-destructive text-center py-8">{error}</p>;
+  if (!settings) return null;
+
+  return (
+    <div className="space-y-4">
+      <div className="mb-2">
+        <p className="text-sm text-muted-foreground">
+          Включите или отключите формы оплаты для пользователей. Отключённые формы не будут отображаться на сайте.
+        </p>
+      </div>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <div className="space-y-3">
+        {FORM_ITEMS.map((item) => (
+          <div
+            key={item.key}
+            className="flex items-center justify-between gap-4 rounded-xl border border-border/50 bg-card/60 p-4"
+          >
+            <div className="min-w-0">
+              <p className="font-medium text-sm">{item.label}</p>
+              <p className="text-xs text-muted-foreground">{item.description}</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {saving === item.key && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+              <Switch
+                checked={settings[item.key]}
+                onCheckedChange={(checked) => handleToggle(item.key, checked)}
+                disabled={saving !== null}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main admin page
 // ---------------------------------------------------------------------------
 
@@ -517,7 +593,7 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [bootstrapping, setBootstrapping] = useState(true);
-  const [tab, setTab] = useState<'banners'>('banners');
+  const [tab, setTab] = useState<'banners' | 'forms'>('banners');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -560,7 +636,10 @@ export default function AdminPage() {
     return <LoginForm onLogin={handleLogin} />;
   }
 
-  const TABS = [{ key: 'banners' as const, label: 'Баннеры' }];
+  const TABS = [
+    { key: 'banners' as const, label: 'Баннеры' },
+    { key: 'forms' as const, label: 'Формы' },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -600,6 +679,7 @@ export default function AdminPage() {
         </div>
 
         {tab === 'banners' && <BannersTab />}
+        {tab === 'forms' && <FormSettingsTab />}
       </main>
     </div>
   );
