@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Mail, AlertTriangle, X, Check, ChevronDown, Tag, Smartphone, LogIn, Gift, CreditCard } from 'lucide-react';
+import { Loader2, Mail, AlertTriangle, X, ChevronDown, Tag, Smartphone, LogIn, Gift, CreditCard } from 'lucide-react';
 import Image from 'next/image';
 
 const PRIORITY_REGIONS = ['RU', 'US', 'TR'];
@@ -145,19 +145,14 @@ function RegionCard({
     <button
       type="button"
       onClick={onClick}
-      className={`relative rounded-xl border px-3 py-3 text-center transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring min-w-0
+      className={`relative rounded-2xl border px-3 py-3 text-center transition-all duration-300 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring min-w-0
         ${selected
-          ? 'border-primary bg-primary/10 text-primary'
-          : 'border-border/50 bg-card/60 hover:border-primary/50 hover:bg-card text-foreground'
+          ? 'border-white/20 bg-white/[0.12] text-white shadow-[0_0_20px_-4px_oklch(1_0_0_/_0.12),inset_0_1px_0_0_oklch(1_0_0_/_0.15)] backdrop-blur-md scale-[1.04]'
+          : 'border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/[0.14] text-foreground backdrop-blur-sm'
         }`}
     >
-      {selected && (
-        <span className="absolute top-1.5 right-1.5">
-          <Check className="h-3 w-3 text-primary" />
-        </span>
-      )}
-      <span className="text-lg font-bold block leading-none mb-1">{code}</span>
-      <span className="text-[10px] text-muted-foreground leading-tight block break-words">
+      <span className={`text-lg font-bold block leading-none mb-1 transition-colors duration-300 ${selected ? 'text-white' : ''}`}>{code}</span>
+      <span className={`text-[10px] leading-tight block break-words transition-colors duration-300 ${selected ? 'text-white/60' : 'text-muted-foreground'}`}>
         {regionLabel(code)}
       </span>
     </button>
@@ -243,18 +238,13 @@ function VoucherCard({
     <button
       type="button"
       onClick={onClick}
-      className={`relative rounded-xl border px-3 py-3 text-center transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
+      className={`relative rounded-2xl border px-3 py-3 text-center transition-all duration-300 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
         ${selected
-          ? 'border-primary bg-primary/10 text-primary'
-          : 'border-border/50 bg-card/60 hover:border-primary/50 hover:bg-card text-foreground'
+          ? 'border-white/20 bg-white/[0.12] text-white shadow-[0_0_20px_-4px_oklch(1_0_0_/_0.12),inset_0_1px_0_0_oklch(1_0_0_/_0.15)] backdrop-blur-md scale-[1.04]'
+          : 'border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/[0.14] text-foreground backdrop-blur-sm'
         }`}
     >
-      {selected && (
-        <span className="absolute top-1.5 right-1.5">
-          <Check className="h-3 w-3 text-primary" />
-        </span>
-      )}
-      <span className="text-sm font-bold block leading-none">{cleanVoucherName(voucher.name)}</span>
+      <span className={`text-sm font-bold block leading-none transition-colors duration-300 ${selected ? 'text-white' : ''}`}>{cleanVoucherName(voucher.name)}</span>
     </button>
   );
 }
