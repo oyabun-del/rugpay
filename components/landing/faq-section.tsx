@@ -40,7 +40,7 @@ const faqs = [
 
 export function FAQSection() {
   return (
-    <section id="faq" className="py-20 bg-secondary/30">
+    <section id="faq" className="py-20">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -57,7 +57,7 @@ export function FAQSection() {
               <AccordionItem
                 key={index}
                 value={`item-${index}`}
-                className="border border-border/50 rounded-lg px-6 bg-card/50"
+                className="glass-elevated rounded-2xl px-6 border-0"
               >
                 <AccordionTrigger className="text-left hover:no-underline">
                   {faq.question}

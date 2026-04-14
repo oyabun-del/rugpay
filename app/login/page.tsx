@@ -36,12 +36,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-1/4 -left-1/4 w-1/2 h-1/2 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-primary/5 rounded-full blur-3xl" />
-      </div>
-
-      <Card className="w-full max-w-md border-border/50 bg-card/80 backdrop-blur-sm">
+      <Card className="w-full max-w-md animate-glass-appear">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <BrandLogo size={40} textClassName="text-2xl font-bold" />
@@ -65,7 +60,6 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-input/50"
               />
             </div>
 
@@ -81,7 +75,6 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="bg-input/50"
               />
             </div>
 

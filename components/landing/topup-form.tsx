@@ -53,18 +53,15 @@ export function TopupForm() {
 
     const flash = () => {
       setHighlight(false);
-      // Force reflow so re-adding the class restarts the animation
       void cardRef.current?.offsetWidth;
       setHighlight(true);
       setTimeout(() => setHighlight(false), 2200);
     };
 
-    // Flash on initial load if hash is #topup
     if (window.location.hash === '#topup') {
       flash();
     }
 
-    // Listen for clicks on any anchor pointing to #topup
     const onClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest('a[href*="#topup"]');
       if (target) {
@@ -162,7 +159,6 @@ export function TopupForm() {
   const steamLoginRegex = /^[A-Za-z0-9]{2,32}$/;
   const pubgUidRegex = /^\d{5,20}$/;
 
-  // Realtime validation hints
   const steamLoginTouched = steamNickname.length > 0;
   const steamLoginError = steamLoginTouched && !steamLoginRegex.test(steamNickname)
     ? 'Только английские буквы и цифры, 2-32 символа'
@@ -194,7 +190,7 @@ export function TopupForm() {
     return fallback;
   };
   const emphasizedInputClass =
-    'bg-background/90 border-2 border-primary/35 font-semibold placeholder:font-medium placeholder:text-muted-foreground/80 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30';
+    'bg-background/60 border-2 border-primary/25 font-semibold placeholder:font-medium placeholder:text-muted-foreground/80 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30';
 
   const handleApplyPromo = async () => {
     if (!promocode.trim()) return;
@@ -367,7 +363,7 @@ export function TopupForm() {
 
   if (!formSettings.steam_enabled && !formSettings.pubg_enabled) {
     return (
-      <Card ref={cardRef} className="w-full max-w-[31rem] 3xl:max-w-[38rem] 4xl:max-w-[48rem] h-auto lg:min-h-[620px] 3xl:min-h-[780px] 4xl:min-h-[1000px] border-border/50 bg-card/80 shadow-lg backdrop-blur-sm rounded-2xl flex items-center justify-center">
+      <Card ref={cardRef} className="w-full max-w-[31rem] 3xl:max-w-[38rem] 4xl:max-w-[48rem] h-auto lg:min-h-[620px] 3xl:min-h-[780px] 4xl:min-h-[1000px] rounded-2xl flex items-center justify-center">
         <CardContent className="text-center space-y-3 py-12">
           <p className="text-lg font-semibold text-muted-foreground">Формы пополнения временно недоступны</p>
           <p className="text-sm text-muted-foreground">Попробуйте позже</p>
@@ -377,7 +373,7 @@ export function TopupForm() {
   }
 
   return (
-    <Card ref={cardRef} className={`w-full max-w-[31rem] 3xl:max-w-[38rem] 4xl:max-w-[48rem] h-auto lg:min-h-[620px] 3xl:min-h-[780px] 4xl:min-h-[1000px] border-border/50 bg-card/80 shadow-lg backdrop-blur-sm rounded-2xl ${highlight ? 'animate-form-highlight' : ''}`}>
+    <Card ref={cardRef} className={`w-full max-w-[31rem] 3xl:max-w-[38rem] 4xl:max-w-[48rem] h-auto lg:min-h-[620px] 3xl:min-h-[780px] 4xl:min-h-[1000px] rounded-2xl ${highlight ? 'animate-form-highlight' : ''}`}>
       <CardHeader className="space-y-1">
         <div className={`grid gap-2 pb-2 ${formSettings.steam_enabled && formSettings.pubg_enabled ? 'grid-cols-2' : 'grid-cols-1'}`}>
           {formSettings.steam_enabled && (
@@ -442,13 +438,13 @@ export function TopupForm() {
                         Памятка
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent align="end" className="w-80 space-y-3">
+                    <PopoverContent align="end" className="w-80 space-y-3 glass-elevated rounded-2xl">
                       <p className="text-sm font-semibold text-yellow-500">Обратите внимание!</p>
                       <p className="text-sm text-muted-foreground leading-relaxed">
                         Логин это то, что вы указываете при входе в Steam. Если вы укажете неверный
                         логин, то средства уйдут другому пользователю.
                       </p>
-                      <div className="overflow-hidden rounded-md border border-border/60">
+                      <div className="overflow-hidden rounded-xl border border-white/[0.1]">
                         <Image
                           src="/steam-login-hint.png"
                           alt="Пример расположения Steam логина"
@@ -509,7 +505,7 @@ export function TopupForm() {
                         Памятка
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent align="end" className="w-80 space-y-3">
+                    <PopoverContent align="end" className="w-80 space-y-3 glass-elevated rounded-2xl">
                       <p className="text-sm font-semibold text-yellow-500">Где взять UID?</p>
                       <div className="text-sm text-muted-foreground leading-relaxed space-y-1">
                         <p>1) Войди в свой аккаунт в PUBG Mobile.</p>
@@ -542,11 +538,11 @@ export function TopupForm() {
                       type="button"
                       onClick={() => pkg.enabled && setSelectedPubgUc(pkg.uc)}
                       disabled={!pkg.enabled}
-                      className={`relative min-h-[96px] rounded-lg border p-3.5 pr-10 text-left transition-colors duration-200 ${
+                      className={`relative min-h-[96px] rounded-xl border p-3.5 pr-10 text-left transition-all duration-300 ${
                         selectedPubgUc === pkg.uc
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border bg-background/40'
-                      } ${pkg.enabled ? 'cursor-pointer hover:border-primary/60' : 'opacity-50 cursor-not-allowed'}`}
+                          ? 'border-primary/50 bg-primary/10 shadow-[0_0_16px_-4px_oklch(0.65_0.24_270_/_0.3)]'
+                          : 'border-white/[0.1] bg-white/[0.03]'
+                      } ${pkg.enabled ? 'cursor-pointer hover:border-primary/40 hover:bg-primary/5' : 'opacity-50 cursor-not-allowed'}`}
                     >
                       {selectedPubgUc === pkg.uc && pkg.enabled && (
                         <CheckCircle2 className="absolute right-2 top-2 h-4 w-4 text-primary" />
@@ -557,7 +553,7 @@ export function TopupForm() {
                           alt={pkg.label}
                           width={56}
                           height={56}
-                          className="h-16 w-16 rounded-md object-cover flex-shrink-0"
+                          className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
                         />
                         <div className="flex flex-col gap-0.5">
                           <span className="text-xl font-extrabold leading-tight"
@@ -614,7 +610,7 @@ export function TopupForm() {
               </Button>
             </div>
             {promoApplied && (
-              <Badge variant="secondary" className="bg-green-500/10 text-green-500">
+              <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-green-500/20">
                 Промокод применен
               </Badge>
             )}
@@ -626,7 +622,7 @@ export function TopupForm() {
             const basePrice = pkg.price_rub;
             const finalPrice = Math.round(basePrice * pubgDiscountMultiplier);
             return (
-              <div className="rounded-xl border border-border/50 bg-muted/30 px-5 py-4 space-y-3">
+              <div className="rounded-2xl glass-subtle px-5 py-4 space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Пакет</span>
                   <span className="font-medium">{pkg.uc} UC</span>
@@ -642,9 +638,9 @@ export function TopupForm() {
                     </span>
                   </div>
                 )}
-                <div className="border-t border-border/50 pt-3 flex justify-between items-center">
+                <div className="border-t border-white/[0.08] pt-3 flex justify-between items-center">
                   <span className="font-semibold">Итого к оплате</span>
-                    <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 text-primary-foreground font-extrabold text-xl tracking-tight shadow-lg shadow-primary/25">
+                    <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 text-primary-foreground font-extrabold text-xl tracking-tight shadow-[0_2px_16px_-2px_oklch(0.65_0.24_270_/_0.4)]">
                       {finalPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
                     </span>
                 </div>
@@ -653,7 +649,7 @@ export function TopupForm() {
           })()}
 
           {formMode === 'steam' && numAmount > 0 && (
-            <div className="rounded-lg bg-secondary/50 p-4 space-y-2">
+            <div className="rounded-2xl glass-subtle px-5 py-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Сумма пополнения</span>
                 <span>{numAmount.toFixed(2)} RUB</span>
@@ -667,9 +663,9 @@ export function TopupForm() {
                 </span>
                 <span className="text-green-500">-{(finalAmount * (steamDiscountPercent / 100)).toFixed(2)} RUB</span>
               </div>
-              <div className="border-t border-border pt-2 flex justify-between items-center font-semibold">
+              <div className="border-t border-white/[0.08] pt-2 flex justify-between items-center font-semibold">
                 <span>Итого</span>
-                  <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 text-primary-foreground font-extrabold text-xl tracking-tight shadow-lg shadow-primary/25">
+                  <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 text-primary-foreground font-extrabold text-xl tracking-tight shadow-[0_2px_16px_-2px_oklch(0.65_0.24_270_/_0.4)]">
                     {(finalAmount * steamDiscountMultiplier).toFixed(2)} RUB
                   </span>
               </div>

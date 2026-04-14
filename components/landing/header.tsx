@@ -44,7 +44,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full glass border-b-0" style={{ borderBottom: '1px solid oklch(1 0 0 / 0.08)' }}>
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <BrandLogo />
@@ -52,7 +52,7 @@ export function Header() {
           <nav className="hidden md:flex items-center gap-6">
             <Link
               href="/#topup"
-              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all duration-300 hover:bg-primary/90 animate-[pulse_1.8s_ease-in-out_infinite]"
+              className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-[0_2px_12px_-2px_oklch(0.65_0.24_270_/_0.4)] transition-all duration-300 hover:shadow-[0_4px_20px_-2px_oklch(0.65_0.24_270_/_0.5)] hover:bg-primary/90 animate-[liquid-pulse_2.5s_ease-in-out_infinite]"
               onClick={(e) => {
                 e.preventDefault();
                 smoothScrollToAnchor('/#topup');
@@ -62,7 +62,7 @@ export function Header() {
             </Link>
             <Link
               href="/#games"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
               onClick={(e) => {
                 e.preventDefault();
                 smoothScrollToAnchor('/#games');
@@ -72,7 +72,7 @@ export function Header() {
             </Link>
             <Link
               href="#features"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
               onClick={(e) => {
                 e.preventDefault();
                 smoothScrollToAnchor('#features');
@@ -82,7 +82,7 @@ export function Header() {
             </Link>
             <Link
               href="#how-it-works"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
               onClick={(e) => {
                 e.preventDefault();
                 smoothScrollToAnchor('#how-it-works');
@@ -92,7 +92,7 @@ export function Header() {
             </Link>
             <Link
               href="#faq"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
               onClick={(e) => {
                 e.preventDefault();
                 smoothScrollToAnchor('#faq');
@@ -105,7 +105,7 @@ export function Header() {
           <div className="hidden md:flex items-center gap-3">
             <a
               href="mailto:gamecover@xraytune.ru"
-              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
               aria-label="Написать в техподдержку"
             >
               <Mail className="h-4 w-4" />
@@ -134,7 +134,7 @@ export function Header() {
           </div>
 
           <button
-            className="md:hidden p-2"
+            className="md:hidden p-2 rounded-xl hover:bg-accent/15 transition-colors duration-300"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Открыть меню"
           >
@@ -147,29 +147,29 @@ export function Header() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border/40 animate-menu-open">
+          <div className="md:hidden py-4 border-t border-white/[0.08] animate-menu-open">
             <nav className="flex flex-col gap-4">
               <a
                 href="mailto:gamecover@xraytune.ru"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Техподдержка: gamecover@xraytune.ru
               </a>
               <Link
                 href="/#topup"
-                className="relative inline-flex items-center justify-center overflow-hidden rounded-md bg-primary/80 px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-all duration-300 hover:bg-primary/90 before:absolute before:inset-0 before:bg-primary before:animate-[pulse_1.8s_ease-in-out_infinite]"
+                className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-[0_2px_12px_-2px_oklch(0.65_0.24_270_/_0.4)] transition-all duration-300"
                 onClick={(e) => {
                   e.preventDefault();
                   setMobileMenuOpen(false);
                   smoothScrollToAnchor('/#topup');
                 }}
               >
-                <span className="relative z-10">Пополнить</span>
+                Пополнить
               </Link>
               <Link
                 href="/#games"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
                 onClick={(e) => {
                   e.preventDefault();
                   setMobileMenuOpen(false);
@@ -180,7 +180,7 @@ export function Header() {
               </Link>
               <Link
                 href="#features"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
                 onClick={(e) => {
                   e.preventDefault();
                   setMobileMenuOpen(false);
@@ -191,7 +191,7 @@ export function Header() {
               </Link>
               <Link
                 href="#how-it-works"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
                 onClick={(e) => {
                   e.preventDefault();
                   setMobileMenuOpen(false);
@@ -202,7 +202,7 @@ export function Header() {
               </Link>
               <Link
                 href="#faq"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
                 onClick={(e) => {
                   e.preventDefault();
                   setMobileMenuOpen(false);
@@ -211,7 +211,7 @@ export function Header() {
               >
                 Вопросы
               </Link>
-              <div className="flex flex-col gap-2 pt-4 border-t border-border/40">
+              <div className="flex flex-col gap-2 pt-4 border-t border-white/[0.08]">
                 {isAuthenticated ? (
                   <>
                     <Button variant="ghost" className="w-full" onClick={onLogout}>Выйти</Button>

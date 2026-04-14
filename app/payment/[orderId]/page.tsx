@@ -167,21 +167,16 @@ export default function PaymentPage({
 
   return (
     <div className="min-h-screen py-12 px-4">
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-1/4 -left-1/4 w-1/2 h-1/2 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-primary/5 rounded-full blur-3xl" />
-      </div>
-
       <div className="max-w-lg mx-auto">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors duration-300 mb-6"
         >
           <ArrowLeft className="h-4 w-4" />
           На главную
         </Link>
 
-        <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+        <Card className="animate-glass-appear">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <BrandLogo size={40} textClassName="text-2xl font-bold" />
@@ -191,7 +186,7 @@ export default function PaymentPage({
           <CardContent className="space-y-6">
             {/* Status */}
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary/50 mb-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full glass-subtle mb-4">
                 <StatusIcon
                   className={`h-8 w-8 ${
                     status === 'processing' ? 'animate-spin' : ''
@@ -213,7 +208,7 @@ export default function PaymentPage({
             </div>
 
             {/* Order flow */}
-            <div className="space-y-3 rounded-lg bg-secondary/20 p-4">
+            <div className="space-y-3 rounded-2xl glass-subtle p-4">
               <p className="text-sm font-medium">Этапы обработки заказа</p>
               {flowSteps.map((step, index) => {
                 const isDone = status !== 'failed' && index < currentStep;
@@ -222,10 +217,10 @@ export default function PaymentPage({
                 const circleClass = isFailedCurrent
                   ? 'bg-red-500 text-white'
                   : isDone
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground shadow-[0_2px_8px_-2px_oklch(0.65_0.24_270_/_0.4)]'
                     : isCurrent
                       ? 'bg-primary/20 text-primary border border-primary/40'
-                      : 'bg-muted text-muted-foreground';
+                      : 'bg-white/[0.06] text-muted-foreground';
                 const textClass = isFailedCurrent
                   ? 'text-red-500'
                   : isDone || isCurrent
@@ -246,7 +241,7 @@ export default function PaymentPage({
             </div>
 
             {/* Order details */}
-            <div className="space-y-3 rounded-lg bg-secondary/30 p-4">
+            <div className="space-y-3 rounded-2xl glass-subtle p-4">
               {isApple ? (
                 <>
                   <div className="flex justify-between text-sm">
@@ -283,7 +278,7 @@ export default function PaymentPage({
                 <span className="text-muted-foreground">Сумма</span>
                 <span>{order.amount.toLocaleString()} RUB</span>
               </div>
-              <div className="border-t border-border pt-3 flex justify-between font-semibold">
+              <div className="border-t border-white/[0.08] pt-3 flex justify-between font-semibold">
                 <span>Итого</span>
                 <span className="text-primary">
                   {order.final_amount.toLocaleString()} RUB
@@ -293,7 +288,7 @@ export default function PaymentPage({
 
             {/* Success message */}
             {status === 'completed' && (
-              <div className="text-center p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+              <div className="text-center p-4 rounded-2xl bg-green-500/10 border border-green-500/20">
                 <p className="text-green-500 font-medium">
                   {isApple
                     ? 'Подарочная карта Apple доставлена!'
@@ -313,7 +308,7 @@ export default function PaymentPage({
 
             {/* Pending payment message */}
             {status === 'pending' && (
-              <div className="text-center p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+              <div className="text-center p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20">
                 <p className="text-yellow-500 font-medium">Ожидание оплаты</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Заказ создан, но платеж еще не подтвержден.
@@ -334,7 +329,7 @@ export default function PaymentPage({
 
             {/* Failed message */}
             {status === 'failed' && (
-              <div className="text-center p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+              <div className="text-center p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
                 <p className="text-red-500 font-medium">
                   Пополнение не выполнено
                 </p>

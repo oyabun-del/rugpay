@@ -64,7 +64,7 @@ function ResetPasswordForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md border-border/50 bg-card/80 backdrop-blur-sm">
+      <Card className="w-full max-w-md animate-glass-appear">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <BrandLogo size={40} textClassName="text-2xl font-bold" />
@@ -87,7 +87,6 @@ function ResetPasswordForm() {
                 placeholder="Минимум 8 символов"
                 required
                 maxLength={72}
-                className="bg-input/50"
               />
               <p className="text-xs text-muted-foreground">{passwordHint}</p>
             </div>
@@ -103,7 +102,6 @@ function ResetPasswordForm() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required
-                className="bg-input/50"
               />
             </div>
 
@@ -132,7 +130,7 @@ function ResetPasswordForm() {
 }
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center px-4 py-12">Загрузка...</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center px-4 py-12"><div className="w-full max-w-md h-[400px] glass-elevated rounded-2xl animate-pulse" /></div>}>
       <ResetPasswordForm />
     </Suspense>
   );

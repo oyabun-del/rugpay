@@ -59,17 +59,18 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen flex">
-      {/* Sidebar */}
+      {/* Sidebar — liquid glass */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 glass transform transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:translate-x-0 lg:static ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
+        style={{ borderRight: '1px solid oklch(1 0 0 / 0.08)' }}
       >
         <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
+          <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
             <BrandLogo size={32} textClassName="font-bold text-sidebar-foreground" />
             <button
-              className="lg:hidden p-1 text-sidebar-foreground"
+              className="lg:hidden p-1 text-sidebar-foreground rounded-lg hover:bg-white/[0.06] transition-colors"
               onClick={() => setSidebarOpen(false)}
             aria-label="Закрыть меню"
             >
@@ -85,10 +86,10 @@ export default function DashboardLayout({
                   key={item.href}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-300 ${
                     isActive
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                      : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                      ? 'glass-subtle text-foreground font-medium'
+                      : 'text-muted-foreground hover:bg-white/[0.06] hover:text-foreground'
                   }`}
                 >
                   <item.icon className="h-4 w-4" />
@@ -98,23 +99,23 @@ export default function DashboardLayout({
             })}
           </nav>
 
-          <div className="p-4 border-t border-sidebar-border space-y-4">
+          <div className="p-4 border-t border-white/[0.06] space-y-4">
             <div className="flex items-center gap-3 px-3 py-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-accent">
-                <Wallet className="h-4 w-4 text-sidebar-accent-foreground" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl glass-subtle">
+                <Wallet className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
+                <p className="text-sm font-medium truncate">
                   {user.email}
                 </p>
-                <p className="text-xs text-sidebar-foreground/60">
+                <p className="text-xs text-muted-foreground">
                   Баланс: {user.referral_balance?.toFixed(2) || '0.00'} RUB
                 </p>
               </div>
             </div>
             <Button
               variant="ghost"
-              className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+              className="w-full justify-start text-muted-foreground hover:text-foreground"
               onClick={handleLogout}
             >
               <LogOut className="mr-2 h-4 w-4" />
@@ -127,16 +128,16 @@ export default function DashboardLayout({
       {/* Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-background/60 backdrop-blur-md lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-h-screen">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-border bg-background/80 backdrop-blur-md px-4 lg:px-6">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 glass px-4 lg:px-6" style={{ borderBottom: '1px solid oklch(1 0 0 / 0.08)' }}>
           <button
-            className="lg:hidden p-2"
+            className="lg:hidden p-2 rounded-xl hover:bg-white/[0.06] transition-colors"
             onClick={() => setSidebarOpen(true)}
             aria-label="Открыть меню"
           >

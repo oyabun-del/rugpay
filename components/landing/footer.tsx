@@ -4,7 +4,7 @@ import { BrandLogo } from '@/components/brand-logo';
 
 export function Footer() {
   return (
-    <footer className="border-t border-border/40 py-12">
+    <footer className="border-t border-white/[0.06] py-12">
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-4 gap-8">
           <div className="md:col-span-2">
@@ -23,7 +23,7 @@ export function Footer() {
               <li>
                 <Link
                   href="#features"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground transition-colors duration-300"
                 >
                   Преимущества
                 </Link>
@@ -31,7 +31,7 @@ export function Footer() {
               <li>
                 <Link
                   href="#how-it-works"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground transition-colors duration-300"
                 >
                   Как это работает
                 </Link>
@@ -39,7 +39,7 @@ export function Footer() {
               <li>
                 <Link
                   href="#faq"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground transition-colors duration-300"
                 >
                   Вопросы
                 </Link>
@@ -47,7 +47,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/dashboard"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground transition-colors duration-300"
                 >
                   Кабинет
                 </Link>
@@ -61,7 +61,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/terms"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground transition-colors duration-300"
                 >
                   Пользовательское соглашение
                 </Link>
@@ -69,7 +69,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/privacy"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground transition-colors duration-300"
                 >
                   Политика конфиденциальности
                 </Link>
@@ -79,7 +79,7 @@ export function Footer() {
               <h4 className="font-semibold mb-2 text-sm">Поддержка</h4>
               <a
                 href="mailto:gamecover@xraytune.ru"
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
               >
                 <Mail className="h-4 w-4" />
                 gamecover@xraytune.ru
@@ -88,7 +88,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-border/40 mt-12 pt-8 text-center text-sm text-muted-foreground">
+        <div className="border-t border-white/[0.06] mt-12 pt-8 text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} RugPay. Все права защищены.</p>
         </div>
       </div>

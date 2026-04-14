@@ -69,17 +69,11 @@ export function HeroSection() {
 
   return (
     <section id="topup" className="relative min-h-[calc(100vh-4rem)] flex items-center scroll-mt-20">
-      {/* Background gradient */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-1/4 -left-1/4 w-1/2 h-1/2 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-1/4 w-1/2 h-1/2 bg-primary/5 rounded-full blur-3xl" />
-      </div>
-
       <div className="container mx-auto px-4 py-12 3xl:max-w-[1800px] 4xl:max-w-[2400px]">
         <div className="grid lg:grid-cols-[1.45fr_0.75fr] gap-6 md:gap-8 lg:gap-[45px] 3xl:gap-[60px] items-center">
-          {/* Mobile banner — clickable link wrapper */}
+          {/* Mobile banner */}
           <div className="block lg:hidden w-full">
-            <Link href={currentSlide?.button_link || '/#topup'} className="block relative h-[28vh] overflow-hidden rounded-2xl border border-border/50 bg-card/70 cursor-pointer">
+            <Link href={currentSlide?.button_link || '/#topup'} className="block relative h-[28vh] overflow-hidden rounded-2xl glass-elevated cursor-pointer">
               {currentSlide ? (
                 slides.map((slide, idx) => (
                   <Image
@@ -111,7 +105,7 @@ export function HeroSection() {
                       type="button"
                       aria-label={`Слайд ${idx + 1}`}
                       onClick={(e) => { e.preventDefault(); setActiveIndex(idx); }}
-                      className={`h-2 rounded-full transition-all ${
+                      className={`h-2 rounded-full transition-all duration-300 ${
                         idx === activeIndex ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/80'
                       }`}
                     />
@@ -123,7 +117,7 @@ export function HeroSection() {
 
           {/* Desktop banner */}
           <div className="hidden lg:block w-full">
-            <div className="relative h-[620px] 3xl:h-[780px] 4xl:h-[1000px] overflow-hidden rounded-2xl border border-border/50 bg-card/70">
+            <div className="relative h-[620px] 3xl:h-[780px] 4xl:h-[1000px] overflow-hidden rounded-2xl glass-elevated">
               {currentSlide ? (
                 slides.map((slide, idx) => (
                   <Image
@@ -162,7 +156,7 @@ export function HeroSection() {
                       type="button"
                       aria-label={`Слайд ${idx + 1}`}
                       onClick={() => setActiveIndex(idx)}
-                      className={`h-2.5 rounded-full transition-all ${
+                      className={`h-2.5 rounded-full transition-all duration-300 ${
                         idx === activeIndex ? 'w-8 bg-white' : 'w-2.5 bg-white/50 hover:bg-white/80'
                       }`}
                     />
@@ -173,7 +167,7 @@ export function HeroSection() {
           </div>
 
           <div className="flex justify-center lg:justify-end">
-            <Suspense fallback={<div className="w-full max-w-[31rem] 3xl:max-w-[38rem] 4xl:max-w-[48rem] h-[620px] 3xl:h-[780px] 4xl:h-[1000px] bg-card/50 rounded-lg animate-pulse" />}>
+            <Suspense fallback={<div className="w-full max-w-[31rem] 3xl:max-w-[38rem] 4xl:max-w-[48rem] h-[620px] 3xl:h-[780px] 4xl:h-[1000px] glass-elevated rounded-2xl animate-pulse" />}>
               <TopupForm />
             </Suspense>
           </div>

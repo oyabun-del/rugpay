@@ -35,15 +35,14 @@ export function HowItWorksSection() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-          {steps.map((step, index) => (
+          {steps.map((step) => (
             <div key={step.step} className="relative">
-             
               <div className="relative flex flex-col items-center text-center">
                 <div className="mb-4 relative">
-                  <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center">
+                  <div className="h-24 w-24 rounded-full glass-elevated flex items-center justify-center border border-primary/20">
                     <step.icon className="h-10 w-10 text-primary" />
                   </div>
-                  <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center">
+                  <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center shadow-[0_2px_12px_-2px_oklch(0.65_0.24_270_/_0.5)]">
                     {step.step}
                   </div>
                 </div>

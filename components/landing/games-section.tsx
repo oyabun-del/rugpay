@@ -31,7 +31,7 @@ export function GamesSection() {
   });
 
   return (
-    <section id="games" className="py-16 bg-secondary/30 scroll-mt-20">
+    <section id="games" className="py-16 scroll-mt-20">
       <div className="container mx-auto px-4">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold mb-3">
@@ -46,7 +46,7 @@ export function GamesSection() {
           {games.map((game) => {
             const card = (
               <Card
-                className="border-border/50 overflow-hidden group py-0 gap-0 hover:border-primary/50 transition-all duration-300"
+                className="overflow-hidden group py-0 gap-0 hover:border-primary/40 transition-all duration-300 !bg-transparent !backdrop-filter-none !shadow-none border border-white/[0.1]"
               >
                 <CardContent className="p-0">
                   <div className="relative aspect-[3/4]">
@@ -54,15 +54,15 @@ export function GamesSection() {
                       src={game.image}
                       alt={game.name}
                       fill
-                      className={`object-cover transition-all duration-300 ${game.comingSoon ? 'grayscale' : ''}`}
+                      className={`object-cover transition-all duration-500 ${game.comingSoon ? 'grayscale' : 'group-hover:scale-105'}`}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     {game.comingSoon && (
-                      <div className="absolute top-2 right-2 rounded-md bg-black/70 px-2 py-0.5 text-xs font-semibold text-white">
+                      <div className="absolute top-2 right-2 rounded-lg glass-subtle px-2.5 py-1 text-xs font-semibold text-white">
                         Скоро...
                       </div>
                     )}
-                    <h3 className="absolute bottom-3 left-3 right-3 font-bold text-sm md:text-base lg:text-lg text-white group-hover:text-primary transition-colors leading-tight">
+                    <h3 className="absolute bottom-3 left-3 right-3 font-bold text-sm md:text-base lg:text-lg text-white group-hover:text-primary transition-colors duration-300 leading-tight">
                       {game.name}
                     </h3>
                   </div>

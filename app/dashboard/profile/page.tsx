@@ -70,12 +70,12 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <Card className="border-border/50">
+      <Card>
         <CardHeader>
           <CardTitle>Основная информация</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg bg-secondary/20 p-4">
+          <div className="flex items-center justify-between rounded-xl glass-subtle p-4">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Mail className="h-4 w-4" />
               <span>Email</span>
@@ -83,7 +83,7 @@ export default function ProfilePage() {
             <span className="font-medium">{user.email}</span>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg bg-secondary/20 p-4">
+          <div className="flex items-center justify-between rounded-xl glass-subtle p-4">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Gift className="h-4 w-4" />
               <span>Реферальный код</span>
@@ -91,7 +91,7 @@ export default function ProfilePage() {
             <Badge variant="secondary" className="font-mono">{user.referral_code}</Badge>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg bg-secondary/20 p-4">
+          <div className="flex items-center justify-between rounded-xl glass-subtle p-4">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Gift className="h-4 w-4" />
               <span>Реферальный баланс</span>
@@ -99,7 +99,7 @@ export default function ProfilePage() {
             <span className="font-medium">{(user.referral_balance || 0).toFixed(2)} RUB</span>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg bg-secondary/20 p-4">
+          <div className="flex items-center justify-between rounded-xl glass-subtle p-4">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Calendar className="h-4 w-4" />
               <span>Дата регистрации</span>
@@ -113,7 +113,7 @@ export default function ProfilePage() {
             </span>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg bg-secondary/20 p-4">
+          <div className="flex items-center justify-between rounded-xl glass-subtle p-4">
             <div className="flex items-center gap-2 text-muted-foreground">
               <ShieldCheck className="h-4 w-4" />
               <span>Роль</span>
@@ -123,7 +123,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/50">
+      <Card>
         <CardHeader>
           <CardTitle>Мои заказы</CardTitle>
         </CardHeader>
@@ -140,7 +140,7 @@ export default function ProfilePage() {
           ) : (
             <div className="space-y-3">
               {recentOrders.map((order) => (
-                <div key={order.id} className="rounded-lg bg-secondary/20 p-4 flex items-center justify-between gap-3">
+                <div key={order.id} className="rounded-xl glass-subtle p-4 flex items-center justify-between gap-3">
                   <div className="space-y-1">
                     <p className="font-medium">Заказ #{order.id}</p>
                     <p className="text-xs text-muted-foreground">

@@ -57,7 +57,7 @@ export default function HistoryPage() {
         </p>
       </div>
 
-      <Card className="border-border/50">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <History className="h-5 w-5" />

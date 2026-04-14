@@ -100,7 +100,7 @@ export default function DashboardPage() {
       </div>
 
       {user?.email?.endsWith(GUEST_EMAIL_SUFFIX) && (
-        <Card className="border-amber-500/40 bg-amber-500/10">
+        <Card className="!border-amber-500/30 !bg-amber-500/5">
           <CardContent className="py-4 text-sm">
             Войдите в{' '}
             <Link href="/login" className="font-semibold underline underline-offset-2">
@@ -118,7 +118,7 @@ export default function DashboardPage() {
 
       {/* Stats cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-border/50">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Всего пополнений
@@ -130,7 +130,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/50">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Потрачено
@@ -144,7 +144,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/50">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Доход с рефералов
@@ -158,7 +158,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/50">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
               Реферальный баланс
@@ -174,7 +174,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent orders */}
-      <Card className="border-border/50">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
@@ -191,7 +191,7 @@ export default function DashboardPage() {
               {recentOrders.map((order) => (
                 <div
                   key={order.id}
-                  className="flex items-center justify-between p-4 rounded-lg bg-secondary/30"
+                  className="flex items-center justify-between p-4 rounded-xl glass-subtle"
                 >
                   <div className="space-y-1">
                     <p className="font-medium">

@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md border-border/50 bg-card/80 backdrop-blur-sm">
+      <Card className="w-full max-w-md animate-glass-appear">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <BrandLogo size={40} textClassName="text-2xl font-bold" />
@@ -58,7 +58,6 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="bg-input/50"
               />
             </div>
 

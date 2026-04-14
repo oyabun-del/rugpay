@@ -31,7 +31,7 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-20 bg-secondary/30">
+    <section id="features" className="py-20">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -46,10 +46,10 @@ export function FeaturesSection() {
           {features.map((feature) => (
             <Card
               key={feature.title}
-              className="border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/50 transition-colors"
+              className="hover:border-primary/40 transition-all duration-300"
             >
               <CardContent className="pt-6 text-center">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
                   <feature.icon className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="font-semibold mb-2">{feature.title}</h3>
