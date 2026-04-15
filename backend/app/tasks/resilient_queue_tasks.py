@@ -17,6 +17,7 @@ from app.services.resilient_queue import (
     QUEUE_PAYMENTS,
     QUEUE_ORDERS,
     QUEUE_GUEST_CLEANUP,
+    QUEUE_EMAIL,
 )
 
 logger = get_logger(__name__)
@@ -180,3 +181,52 @@ def drain_resilient_guest_cleanup_queue(max_items: int = 100) -> dict:
             logger.warning("Resilient guest queue item failed", error=str(e), payload=payload)
 
     return {"processed": processed, "failed": failed, "remaining": queue.size(QUEUE_GUEST_CLEANUP)}
+
+
+@shared_task
+def drain_resilient_email_queue(max_items: int = 50) -> dict:
+    """Retry queued emails that failed due to SMTP unavailability."""
+    from app.services.email_service import EmailService
+
+    queue = ResilientQueueService()
+    email_svc = EmailService()
+    processed = 0
+    failed = 0
+
+    for _ in range(max_items):
+        payload = queue.dequeue(QUEUE_EMAIL)
+        if payload is None:
+            break
+        try:
+            success = email_svc.send_email_sync(
+                to_email=payload["to_email"],
+                subject=payload["subject"],
+                body=payload["body"],
+                html_body=payload.get("html_body"),
+            )
+            if success:
+                processed += 1
+            else:
+                # Re-enqueue with incremented attempt count
+                attempts = int(payload.get("attempts", 0)) + 1
+                payload["attempts"] = attempts
+                if attempts <= 10:
+                    queue.enqueue(QUEUE_EMAIL, payload)
+                else:
+                    logger.error(
+                        "Email permanently failed after max retries",
+                        event="email_max_retries_exceeded",
+                        to_email=payload["to_email"],
+                        subject=payload["subject"],
+                        attempts=attempts,
+                    )
+                failed += 1
+        except Exception as e:
+            attempts = int(payload.get("attempts", 0)) + 1
+            payload["attempts"] = attempts
+            if attempts <= 10:
+                queue.enqueue(QUEUE_EMAIL, payload)
+            failed += 1
+            logger.warning("Email queue item failed", error=str(e), to_email=payload.get("to_email"))
+
+    return {"processed": processed, "failed": failed, "remaining": queue.size(QUEUE_EMAIL)}

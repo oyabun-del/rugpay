@@ -7,7 +7,7 @@ from app.repositories.order_repository import OrderRepository
 from app.repositories.user_repository import UserRepository
 from app.repositories.promocode_repository import PromocodeRepository
 from app.models.order import OrderStatus
-from app.schemas.order import OrderResponse, OrderUpdate
+from app.schemas.order import OrderResponse, OrderUpdate, AdminOrderResponse
 from app.schemas.promocode import PromocodeCreate, PromocodeResponse
 from app.schemas.auth import UserResponse
 from app.schemas.stats import AdminStats
@@ -32,13 +32,30 @@ async def get_all_orders(
     skip = (page - 1) * per_page
     
     orders, total = await repo.get_all(skip, per_page, status)
-    
+
     return {
-        "orders": [OrderResponse.model_validate(o) for o in orders],
+        "orders": [AdminOrderResponse.from_order(o) for o in orders],
         "total": total,
         "page": page,
         "per_page": per_page,
     }
+
+
+@router.get("/orders/{order_id}", response_model=AdminOrderResponse)
+async def get_order_detail(
+    order_id: int,
+    admin_id: int = Depends(get_current_admin_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get single order detail with Apple Gift Card code (admin only)"""
+    repo = OrderRepository(db)
+    order = await repo.get_by_id(order_id)
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found",
+        )
+    return AdminOrderResponse.from_order(order)
 
 
 @router.patch("/orders/{order_id}/status", response_model=OrderResponse)

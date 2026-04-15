@@ -3,16 +3,41 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Menu, X, User, Mail } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { usePathname, useRouter } from 'next/navigation';
 import { BrandLogo } from '@/components/brand-logo';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuClosing, setMenuClosing] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { isAuthenticated, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+
+  const closeMobileMenu = useCallback(() => {
+    if (!mobileMenuOpen || menuClosing) return;
+    setMenuClosing(true);
+    const el = menuRef.current;
+    if (el) {
+      el.addEventListener('animationend', () => {
+        setMobileMenuOpen(false);
+        setMenuClosing(false);
+      }, { once: true });
+    } else {
+      setMobileMenuOpen(false);
+      setMenuClosing(false);
+    }
+  }, [mobileMenuOpen, menuClosing]);
+
+  const toggleMobileMenu = useCallback(() => {
+    if (mobileMenuOpen) {
+      closeMobileMenu();
+    } else {
+      setMobileMenuOpen(true);
+    }
+  }, [mobileMenuOpen, closeMobileMenu]);
 
   const onLogout = () => {
     logout();
@@ -135,24 +160,26 @@ export function Header() {
 
           <button
             className="md:hidden p-2 rounded-xl hover:bg-accent/15 transition-colors duration-300"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            onClick={toggleMobileMenu}
             aria-label="Открыть меню"
           >
-            {mobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
+            <span className="relative block h-6 w-6">
+              <Menu className={`h-6 w-6 absolute inset-0 transition-all duration-300 ${mobileMenuOpen ? 'opacity-0 rotate-90 scale-75' : 'opacity-100 rotate-0 scale-100'}`} />
+              <X className={`h-6 w-6 absolute inset-0 transition-all duration-300 ${mobileMenuOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-75'}`} />
+            </span>
           </button>
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-white/[0.08] animate-menu-open">
+          <div
+            ref={menuRef}
+            className={`md:hidden py-4 border-t border-white/[0.08] ${menuClosing ? 'animate-menu-close' : 'animate-menu-open'}`}
+          >
             <nav className="flex flex-col gap-4">
               <a
                 href="mailto:gamecover@xraytune.ru"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={closeMobileMenu}
               >
                 Техподдержка: gamecover@xraytune.ru
               </a>
@@ -161,7 +188,7 @@ export function Header() {
                 className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-[0_2px_12px_-2px_oklch(0.65_0.24_270_/_0.4)] transition-all duration-300"
                 onClick={(e) => {
                   e.preventDefault();
-                  setMobileMenuOpen(false);
+                  closeMobileMenu();
                   smoothScrollToAnchor('/#topup');
                 }}
               >
@@ -172,7 +199,7 @@ export function Header() {
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
                 onClick={(e) => {
                   e.preventDefault();
-                  setMobileMenuOpen(false);
+                  closeMobileMenu();
                   smoothScrollToAnchor('/#games');
                 }}
               >
@@ -183,7 +210,7 @@ export function Header() {
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
                 onClick={(e) => {
                   e.preventDefault();
-                  setMobileMenuOpen(false);
+                  closeMobileMenu();
                   smoothScrollToAnchor('#features');
                 }}
               >
@@ -194,7 +221,7 @@ export function Header() {
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
                 onClick={(e) => {
                   e.preventDefault();
-                  setMobileMenuOpen(false);
+                  closeMobileMenu();
                   smoothScrollToAnchor('#how-it-works');
                 }}
               >
@@ -205,7 +232,7 @@ export function Header() {
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300"
                 onClick={(e) => {
                   e.preventDefault();
-                  setMobileMenuOpen(false);
+                  closeMobileMenu();
                   smoothScrollToAnchor('#faq');
                 }}
               >

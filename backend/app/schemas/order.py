@@ -83,9 +83,27 @@ class OrderResponse(BaseModel):
     status: OrderStatus
     created_at: datetime
     completed_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
+
+
+class AdminOrderResponse(OrderResponse):
+    """Extended order response for admin panel with extra details."""
+    apple_gift_card_code: Optional[str] = None
+    steam_response: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+    @classmethod
+    def from_order(cls, order) -> "AdminOrderResponse":
+        base = cls.model_validate(order)
+        raw = order.steam_response or ""
+        if order.order_type == "apple" and raw.startswith("apple_voucher_codes:"):
+            base.apple_gift_card_code = raw.replace("apple_voucher_codes:", "").strip()
+        base.steam_response = raw or None
+        return base
 
 
 class OrderUpdate(BaseModel):

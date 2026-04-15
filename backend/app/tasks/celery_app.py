@@ -59,6 +59,10 @@ celery_app.conf.update(
             "task": "app.tasks.resilient_queue_tasks.drain_resilient_guest_cleanup_queue",
             "schedule": 60.0,
         },
+        "drain-resilient-email-queue": {
+            "task": "app.tasks.resilient_queue_tasks.drain_resilient_email_queue",
+            "schedule": 120.0,
+        },
     },
 )
 

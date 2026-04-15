@@ -145,14 +145,25 @@ function RegionCard({
     <button
       type="button"
       onClick={onClick}
-      className={`relative rounded-2xl border px-3 py-3 text-center transition-all duration-300 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring min-w-0
+      className={`relative overflow-hidden rounded-2xl border px-3 py-3 text-center transition-all duration-500 ease-out cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring min-w-0
         ${selected
-          ? 'border-white/20 bg-white/[0.12] text-white shadow-[0_0_20px_-4px_oklch(1_0_0_/_0.12),inset_0_1px_0_0_oklch(1_0_0_/_0.15)] backdrop-blur-md scale-[1.04]'
-          : 'border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/[0.14] text-foreground backdrop-blur-sm'
+          ? 'border-white/30 text-white scale-[1.06] shadow-[0_0_24px_-4px_rgba(120,120,255,0.25),0_0_8px_-2px_rgba(255,255,255,0.15),inset_0_1px_0_0_rgba(255,255,255,0.2)] backdrop-blur-xl'
+          : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/[0.16] text-foreground backdrop-blur-sm hover:scale-[1.02]'
         }`}
+      style={selected ? {
+        background: 'linear-gradient(135deg, rgba(120,120,255,0.18) 0%, rgba(255,255,255,0.10) 50%, rgba(120,120,255,0.12) 100%)',
+      } : undefined}
     >
-      <span className={`text-lg font-bold block leading-none mb-1 transition-colors duration-300 ${selected ? 'text-white' : ''}`}>{code}</span>
-      <span className={`text-[10px] leading-tight block break-words transition-colors duration-300 ${selected ? 'text-white/60' : 'text-muted-foreground'}`}>
+      {selected && (
+        <div
+          className="absolute inset-0 pointer-events-none rounded-2xl"
+          style={{
+            background: 'radial-gradient(ellipse at 30% 0%, rgba(180,180,255,0.15) 0%, transparent 60%)',
+          }}
+        />
+      )}
+      <span className={`relative text-lg font-bold block leading-none mb-1 transition-colors duration-300 ${selected ? 'text-white' : ''}`}>{code}</span>
+      <span className={`relative text-[10px] leading-tight block break-words transition-colors duration-300 ${selected ? 'text-white/70' : 'text-muted-foreground'}`}>
         {regionLabel(code)}
       </span>
     </button>
@@ -238,13 +249,24 @@ function VoucherCard({
     <button
       type="button"
       onClick={onClick}
-      className={`relative rounded-2xl border px-3 py-3 text-center transition-all duration-300 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
+      className={`relative overflow-hidden rounded-2xl border px-3 py-3 text-center transition-all duration-500 ease-out cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring
         ${selected
-          ? 'border-white/20 bg-white/[0.12] text-white shadow-[0_0_20px_-4px_oklch(1_0_0_/_0.12),inset_0_1px_0_0_oklch(1_0_0_/_0.15)] backdrop-blur-md scale-[1.04]'
-          : 'border-white/[0.08] bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/[0.14] text-foreground backdrop-blur-sm'
+          ? 'border-white/30 text-white scale-[1.06] shadow-[0_0_24px_-4px_rgba(120,120,255,0.25),0_0_8px_-2px_rgba(255,255,255,0.15),inset_0_1px_0_0_rgba(255,255,255,0.2)] backdrop-blur-xl'
+          : 'border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/[0.16] text-foreground backdrop-blur-sm hover:scale-[1.02]'
         }`}
+      style={selected ? {
+        background: 'linear-gradient(135deg, rgba(120,120,255,0.18) 0%, rgba(255,255,255,0.10) 50%, rgba(120,120,255,0.12) 100%)',
+      } : undefined}
     >
-      <span className={`text-sm font-bold block leading-none transition-colors duration-300 ${selected ? 'text-white' : ''}`}>{cleanVoucherName(voucher.name)}</span>
+      {selected && (
+        <div
+          className="absolute inset-0 pointer-events-none rounded-2xl"
+          style={{
+            background: 'radial-gradient(ellipse at 30% 0%, rgba(180,180,255,0.15) 0%, transparent 60%)',
+          }}
+        />
+      )}
+      <span className={`relative text-sm font-bold block leading-none transition-colors duration-300 ${selected ? 'text-white' : ''}`}>{cleanVoucherName(voucher.name)}</span>
     </button>
   );
 }

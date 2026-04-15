@@ -333,14 +333,53 @@
   animation: form-highlight 2.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Mobile menu */
+/* Mobile menu – Apple Glass slide/fade */
 @keyframes menu-open {
-  from { opacity: 0; transform: translateY(-8px); backdrop-filter: blur(0px); }
-  to { opacity: 1; transform: translateY(0); backdrop-filter: blur(var(--glass-blur)); }
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    backdrop-filter: blur(var(--glass-blur, 20px));
+  }
+}
+@keyframes menu-close {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    backdrop-filter: blur(var(--glass-blur, 20px));
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+    backdrop-filter: blur(0px);
+  }
 }
 .animate-menu-open {
-  animation: menu-open 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: menu-open 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
+.animate-menu-close {
+  animation: menu-close 0.25s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+/* Staggered item entrance */
+@keyframes menu-item-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-menu-open > nav > * {
+  opacity: 0;
+  animation: menu-item-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.animate-menu-open > nav > *:nth-child(1) { animation-delay: 0.04s; }
+.animate-menu-open > nav > *:nth-child(2) { animation-delay: 0.08s; }
+.animate-menu-open > nav > *:nth-child(3) { animation-delay: 0.12s; }
+.animate-menu-open > nav > *:nth-child(4) { animation-delay: 0.16s; }
+.animate-menu-open > nav > *:nth-child(5) { animation-delay: 0.20s; }
+.animate-menu-open > nav > *:nth-child(6) { animation-delay: 0.24s; }
+.animate-menu-open > nav > *:nth-child(7) { animation-delay: 0.28s; }
 
 /* Floating liquid orbs background */
 .spotlight-layer {

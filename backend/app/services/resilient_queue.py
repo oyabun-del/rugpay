@@ -11,6 +11,7 @@ logger = get_logger(__name__)
 QUEUE_PAYMENTS = "gamecover:queue:payments"
 QUEUE_ORDERS = "gamecover:queue:orders"
 QUEUE_GUEST_CLEANUP = "gamecover:queue:guest_cleanup"
+QUEUE_EMAIL = "gamecover:queue:email"
 
 
 class ResilientQueueService:

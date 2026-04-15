@@ -1,4 +1,5 @@
 import asyncio
+import json
 import smtplib
 from email.message import EmailMessage
 from pathlib import Path
@@ -8,6 +9,8 @@ from app.core.config import settings
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
+
+QUEUE_EMAIL = "gamecover:queue:email"
 
 
 def _smtp_exception_context(exc: BaseException) -> dict[str, Any]:
@@ -88,6 +91,41 @@ class EmailService:
                 server.login(self.smtp_username, self.smtp_password)
             server.send_message(msg)
 
+    def _enqueue_email(
+        self,
+        to_email: str,
+        subject: str,
+        body: str,
+        html_body: Optional[str] = None,
+    ) -> bool:
+        """Put a failed email into the Redis retry queue."""
+        try:
+            from app.services.resilient_queue import ResilientQueueService
+            queue = ResilientQueueService()
+            queue.enqueue(QUEUE_EMAIL, {
+                "to_email": to_email,
+                "subject": subject,
+                "body": body,
+                "html_body": html_body,
+                "attempts": 0,
+            })
+            logger.info(
+                "Email queued for retry",
+                event="email_queued",
+                to_email=to_email,
+                subject=subject,
+            )
+            return True
+        except Exception as eq:
+            logger.error(
+                "Failed to enqueue email for retry",
+                event="email_queue_failed",
+                to_email=to_email,
+                subject=subject,
+                error=str(eq),
+            )
+            return False
+
     async def send_email(
         self,
         to_email: str,
@@ -95,12 +133,24 @@ class EmailService:
         body: str,
         html_body: Optional[str] = None,
     ) -> None:
+        logger.info(
+            "Sending email",
+            event="email_sending",
+            to_email=to_email,
+            subject=subject,
+        )
         try:
             await asyncio.to_thread(self._send_sync, to_email, subject, body, html_body)
-            logger.info("Email sent", to_email=to_email, subject=subject)
+            logger.info(
+                "Email delivered successfully",
+                event="email_delivered",
+                to_email=to_email,
+                subject=subject,
+            )
         except Exception as e:
             logger.error(
                 "Email send failed",
+                event="email_failed",
                 exc_info=True,
                 to_email=to_email,
                 subject=subject,
@@ -109,6 +159,41 @@ class EmailService:
                 smtp_use_tls=self.smtp_use_tls,
                 **_smtp_exception_context(e),
             )
+            # Queue for retry when SMTP is unavailable
+            self._enqueue_email(to_email, subject, body, html_body)
+
+    def send_email_sync(
+        self,
+        to_email: str,
+        subject: str,
+        body: str,
+        html_body: Optional[str] = None,
+    ) -> bool:
+        """Synchronous send used by the retry queue task. Returns True on success."""
+        logger.info(
+            "Sending email (sync/retry)",
+            event="email_retry_sending",
+            to_email=to_email,
+            subject=subject,
+        )
+        try:
+            self._send_sync(to_email, subject, body, html_body)
+            logger.info(
+                "Email delivered successfully (retry)",
+                event="email_retry_delivered",
+                to_email=to_email,
+                subject=subject,
+            )
+            return True
+        except Exception as e:
+            logger.error(
+                "Email retry send failed",
+                event="email_retry_failed",
+                to_email=to_email,
+                subject=subject,
+                **_smtp_exception_context(e),
+            )
+            return False
 
     async def send_welcome_email(self, to_email: str) -> None:
         subject = "Добро пожаловать в RugPay"
