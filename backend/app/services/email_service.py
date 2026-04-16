@@ -111,7 +111,6 @@ class EmailService:
             })
             logger.info(
                 "Email queued for retry",
-                event="email_queued",
                 to_email=to_email,
                 subject=subject,
             )
@@ -119,7 +118,6 @@ class EmailService:
         except Exception as eq:
             logger.error(
                 "Failed to enqueue email for retry",
-                event="email_queue_failed",
                 to_email=to_email,
                 subject=subject,
                 error=str(eq),
@@ -135,7 +133,7 @@ class EmailService:
     ) -> None:
         logger.info(
             "Sending email",
-            event="email_sending",
+            status="sending",
             to_email=to_email,
             subject=subject,
         )
@@ -143,14 +141,14 @@ class EmailService:
             await asyncio.to_thread(self._send_sync, to_email, subject, body, html_body)
             logger.info(
                 "Email delivered successfully",
-                event="email_delivered",
+                status="delivered",
                 to_email=to_email,
                 subject=subject,
             )
         except Exception as e:
             logger.error(
                 "Email send failed",
-                event="email_failed",
+                status="failed",
                 exc_info=True,
                 to_email=to_email,
                 subject=subject,
@@ -172,7 +170,7 @@ class EmailService:
         """Synchronous send used by the retry queue task. Returns True on success."""
         logger.info(
             "Sending email (sync/retry)",
-            event="email_retry_sending",
+            status="retry_sending",
             to_email=to_email,
             subject=subject,
         )
@@ -180,7 +178,7 @@ class EmailService:
             self._send_sync(to_email, subject, body, html_body)
             logger.info(
                 "Email delivered successfully (retry)",
-                event="email_retry_delivered",
+                status="retry_delivered",
                 to_email=to_email,
                 subject=subject,
             )
@@ -188,7 +186,7 @@ class EmailService:
         except Exception as e:
             logger.error(
                 "Email retry send failed",
-                event="email_retry_failed",
+                status="retry_failed",
                 to_email=to_email,
                 subject=subject,
                 **_smtp_exception_context(e),

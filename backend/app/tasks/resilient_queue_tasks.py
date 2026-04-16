@@ -215,7 +215,6 @@ def drain_resilient_email_queue(max_items: int = 50) -> dict:
                 else:
                     logger.error(
                         "Email permanently failed after max retries",
-                        event="email_max_retries_exceeded",
                         to_email=payload["to_email"],
                         subject=payload["subject"],
                         attempts=attempts,
