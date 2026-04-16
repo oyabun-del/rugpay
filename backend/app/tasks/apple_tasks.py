@@ -58,9 +58,9 @@ def request_apple_voucher(self, order_id: int):
             logger.info("Apple order already completed", order_id=order_id)
             return {"status": "skipped", "message": "Already completed"}
 
-        if order.status not in (OrderStatus.PAID, OrderStatus.PROCESSING):
+        if order.status not in (OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.FAILED):
             logger.warning(
-                "Apple order not in PAID/PROCESSING status",
+                "Apple order not in PAID/PROCESSING/FAILED status",
                 order_id=order_id,
                 status=order.status.value,
             )
@@ -122,29 +122,44 @@ def request_apple_voucher(self, order_id: int):
             return {"status": "success", "vouchers": voucher_codes}
 
         if dg_status == "Fail":
-            order.status = OrderStatus.FAILED
-            order.steam_response = f"apple_voucher_fail:{dg_status}"
-            session.commit()
+            # Wata DG may report "Fail" transiently and still deliver the voucher
+            # later. Only treat as terminal on the last retry attempt.
+            if self.request.retries >= self.max_retries:
+                order.status = OrderStatus.FAILED
+                order.steam_response = f"apple_voucher_fail:{dg_status}"
+                session.commit()
 
-            logger.error("Apple voucher failed", order_id=order_id, wata_order_id=wata_order_id)
+                logger.error("Apple voucher failed (final)", order_id=order_id, wata_order_id=wata_order_id)
 
-            try:
-                run_async(
-                    email_service.send_order_status_email(
-                        to_email=order.email,
-                        order_id=order_id,
-                        status_text="Ошибка",
-                        details="Не удалось получить код Apple Gift Card. Обратитесь в поддержку.",
+                try:
+                    run_async(
+                        email_service.send_order_status_email(
+                            to_email=order.email,
+                            order_id=order_id,
+                            status_text="Ошибка",
+                            details="Не удалось получить код Apple Gift Card. Обратитесь в поддержку.",
+                        )
                     )
-                )
-            except Exception as email_err:
-                logger.error(
-                    "Failed to send Apple failure email",
-                    order_id=order_id,
-                    error=str(email_err),
-                )
+                except Exception as email_err:
+                    logger.error(
+                        "Failed to send Apple failure email",
+                        order_id=order_id,
+                        error=str(email_err),
+                    )
 
-            return {"status": "failed", "message": "Wata DG order failed"}
+                return {"status": "failed", "message": "Wata DG order failed"}
+
+            # Not the last retry — keep PROCESSING and retry, DG may recover.
+            order.steam_response = f"apple_voucher_fail_retry:{dg_status}"
+            session.commit()
+            logger.warning(
+                "Apple voucher DG returned Fail, retrying",
+                order_id=order_id,
+                wata_order_id=wata_order_id,
+                retry=self.request.retries,
+                max_retries=self.max_retries,
+            )
+            raise Exception(f"Apple voucher DG Fail, retrying ({self.request.retries}/{self.max_retries})")
 
         # Pending or Paid — not ready yet, retry
         order.steam_response = f"apple_voucher_pending:{dg_status}"

@@ -438,7 +438,10 @@ async def get_order_for_payment_page(
                     order.steam_response = f"apple_voucher_codes:{codes_str}"
                     await db.commit()
                     await db.refresh(order)
-            elif dg_status == "Fail":
+            elif dg_status == "Fail" and order.status != OrderStatus.PROCESSING:
+                # Only mark FAILED if Celery task is NOT actively processing.
+                # When order is PROCESSING, the Celery task (request_apple_voucher)
+                # handles retries — overwriting the status here would kill the task.
                 await repo.update_status(order.id, OrderStatus.FAILED)
                 order = await repo.get_by_id(order_id)
                 if order:

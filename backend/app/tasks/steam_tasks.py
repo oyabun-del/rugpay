@@ -135,32 +135,39 @@ def process_steam_topup(self, order_id: int):
 def retry_failed_topups():
     """
     Periodic task to retry failed top-ups.
-    
+
     This task finds orders that failed and attempts to retry them.
+    Dispatches the correct Celery task based on order type.
     """
     logger.info("Running retry_failed_topups periodic task")
-    
+
     session = SyncSession()
     try:
-        # Find failed orders from the last 24 hours that might be retryable
         from datetime import datetime, timedelta
+        from app.models.order import OrderType
+
         cutoff = datetime.utcnow() - timedelta(hours=24)
-        
+
         failed_orders = session.query(Order).filter(
             Order.status == OrderStatus.FAILED,
             Order.created_at >= cutoff,
         ).limit(10).all()
-        
+
         retry_count = 0
         for order in failed_orders:
-            # Check if we should retry (e.g., check retry count, error type)
-            # For now, just queue for retry
-            process_steam_topup.delay(order.id)
+            if order.order_type == OrderType.APPLE:
+                from app.tasks.apple_tasks import request_apple_voucher
+                request_apple_voucher.delay(order.id)
+            elif order.order_type == OrderType.PUBG:
+                from app.tasks.pubg_tasks import process_pubg_topup
+                process_pubg_topup.delay(order.id)
+            else:
+                process_steam_topup.delay(order.id)
             retry_count += 1
-        
+
         logger.info("Queued failed orders for retry", count=retry_count)
         return {"retried": retry_count}
-        
+
     finally:
         session.close()
 
