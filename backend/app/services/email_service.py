@@ -146,16 +146,19 @@ class EmailService:
                 subject=subject,
             )
         except Exception as e:
+            ctx = _smtp_exception_context(e)
             logger.error(
                 "Email send failed",
                 status="failed",
-                exc_info=True,
                 to_email=to_email,
                 subject=subject,
                 smtp_host=self.smtp_host,
                 smtp_port=self.smtp_port,
                 smtp_use_tls=self.smtp_use_tls,
-                **_smtp_exception_context(e),
+                exc_type=ctx.get("exc_type"),
+                error_message=ctx.get("message"),
+                smtp_code=ctx.get("smtp_code"),
+                smtp_error=ctx.get("smtp_error"),
             )
             # Queue for retry when SMTP is unavailable
             self._enqueue_email(to_email, subject, body, html_body)

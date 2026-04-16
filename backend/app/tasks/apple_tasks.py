@@ -92,21 +92,29 @@ def request_apple_voucher(self, order_id: int):
             order.completed_at = datetime.utcnow()
             session.commit()
 
-            run_async(
-                email_service.send_order_status_email(
-                    to_email=order.email,
-                    order_id=order_id,
-                    status_text="Выполнен",
-                    details=f"Код Apple Gift Card: {codes_str}",
-                )
-            )
-
             logger.info(
                 "Apple voucher received",
                 order_id=order_id,
                 wata_order_id=wata_order_id,
                 voucher_count=len(voucher_codes),
             )
+
+            # Send email separately so failures don't break the success flow
+            try:
+                run_async(
+                    email_service.send_order_status_email(
+                        to_email=order.email,
+                        order_id=order_id,
+                        status_text="Выполнен",
+                        details=f"Код Apple Gift Card: {codes_str}",
+                    )
+                )
+            except Exception as email_err:
+                logger.error(
+                    "Failed to send Apple voucher email",
+                    order_id=order_id,
+                    error=str(email_err),
+                )
 
             from app.tasks.referral_tasks import process_referral_reward
             process_referral_reward.delay(order_id)
@@ -118,16 +126,24 @@ def request_apple_voucher(self, order_id: int):
             order.steam_response = f"apple_voucher_fail:{dg_status}"
             session.commit()
 
-            run_async(
-                email_service.send_order_status_email(
-                    to_email=order.email,
-                    order_id=order_id,
-                    status_text="Ошибка",
-                    details="Не удалось получить код Apple Gift Card. Обратитесь в поддержку.",
-                )
-            )
-
             logger.error("Apple voucher failed", order_id=order_id, wata_order_id=wata_order_id)
+
+            try:
+                run_async(
+                    email_service.send_order_status_email(
+                        to_email=order.email,
+                        order_id=order_id,
+                        status_text="Ошибка",
+                        details="Не удалось получить код Apple Gift Card. Обратитесь в поддержку.",
+                    )
+                )
+            except Exception as email_err:
+                logger.error(
+                    "Failed to send Apple failure email",
+                    order_id=order_id,
+                    error=str(email_err),
+                )
+
             return {"status": "failed", "message": "Wata DG order failed"}
 
         # Pending or Paid — not ready yet, retry

@@ -262,7 +262,7 @@ async def payment_webhook(
             logger.info(
                 "YooKassa webhook non-final status",
                 order_id=order_id,
-                event=event,
+                webhook_event=event,
                 provider_status=provider_status,
             )
             return {"status": "ok"}
