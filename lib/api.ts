@@ -96,6 +96,11 @@ export interface Order {
   email?: string;
 }
 
+export interface AdminOrder extends Order {
+  apple_gift_card_code?: string | null;
+  steam_response?: string | null;
+}
+
 export interface Promocode {
   id: number;
   code: string;
@@ -400,8 +405,8 @@ export const statsApi = {
 
 // Admin API
 export const adminApi = {
-  getOrders: (params?: { status?: string; page?: number; limit?: number }) =>
-    api.get<{ orders: Order[]; total: number }>('/admin/orders', { params }),
+  getOrders: (params?: { status?: string; page?: number; per_page?: number }) =>
+    api.get<{ orders: AdminOrder[]; total: number; page: number; per_page: number }>('/admin/orders', { params }),
   
   updateOrderStatus: (orderId: number, status: string) =>
     api.patch(`/admin/orders/${orderId}/status`, { status }),

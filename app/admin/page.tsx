@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { adminApi, authApi, type BannerSlide, type FormSettings, type User } from '@/lib/api';
+import { adminApi, authApi, type AdminOrder, type BannerSlide, type FormSettings, type User } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,6 +24,10 @@ import {
   Eye,
   EyeOff,
   Settings,
+  Package,
+  Copy,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -586,6 +590,247 @@ function FormSettingsTab() {
 }
 
 // ---------------------------------------------------------------------------
+// Orders tab
+// ---------------------------------------------------------------------------
+
+const STATUS_LABELS: Record<string, { text: string; cls: string }> = {
+  pending: { text: 'Ожидание', cls: 'bg-yellow-500/15 text-yellow-500' },
+  paid: { text: 'Оплачен', cls: 'bg-blue-500/15 text-blue-500' },
+  processing: { text: 'В обработке', cls: 'bg-purple-500/15 text-purple-500' },
+  completed: { text: 'Выполнен', cls: 'bg-green-500/15 text-green-500' },
+  failed: { text: 'Ошибка', cls: 'bg-red-500/15 text-red-500' },
+  cancelled: { text: 'Отменён', cls: 'bg-muted text-muted-foreground' },
+  refunded: { text: 'Возврат', cls: 'bg-orange-500/15 text-orange-500' },
+};
+
+const ORDER_TYPE_LABELS: Record<string, string> = {
+  steam: 'Steam',
+  pubg: 'PUBG',
+  apple: 'Apple Gift Card',
+};
+
+const STATUS_FILTERS = [
+  { value: '', label: 'Все' },
+  { value: 'pending', label: 'Ожидание' },
+  { value: 'paid', label: 'Оплачен' },
+  { value: 'processing', label: 'В обработке' },
+  { value: 'completed', label: 'Выполнен' },
+  { value: 'failed', label: 'Ошибка' },
+];
+
+function OrdersTab() {
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [copied, setCopied] = useState<number | null>(null);
+  const perPage = 20;
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const params: Record<string, string | number> = { page, per_page: perPage };
+      if (statusFilter) params.status = statusFilter;
+      const { data } = await adminApi.getOrders(params);
+      setOrders(data.orders);
+      setTotal(data.total);
+    } catch {
+      setError('Не удалось загрузить заказы');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, statusFilter]);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+  const copyCode = (code: string, orderId: number) => {
+    navigator.clipboard.writeText(code);
+    setCopied(orderId);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  if (loading && orders.length === 0) {
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  }
+  if (error && orders.length === 0) {
+    return <p className="text-destructive text-center py-8">{error}</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Filters */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {STATUS_FILTERS.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => { setPage(1); setStatusFilter(f.value); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              statusFilter === f.value
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted/40 text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+        <span className="text-xs text-muted-foreground ml-auto">{total} заказ(ов)</span>
+      </div>
+
+      {/* Orders list */}
+      <div className="space-y-2">
+        {orders.map((order) => {
+          const st = STATUS_LABELS[order.status] ?? { text: order.status, cls: 'bg-muted text-muted-foreground' };
+          const isApple = order.order_type === 'apple';
+          const expanded = expandedId === order.id;
+
+          return (
+            <div
+              key={order.id}
+              className="border border-border/50 rounded-xl bg-card/60 overflow-hidden"
+            >
+              {/* Summary row */}
+              <button
+                type="button"
+                onClick={() => setExpandedId(expanded ? null : order.id)}
+                className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/10 transition-colors"
+              >
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted/30 shrink-0">
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm">#{order.id}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {ORDER_TYPE_LABELS[order.order_type ?? 'steam'] ?? order.order_type}
+                    </span>
+                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${st.cls}`}>
+                      {st.text}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {order.email}
+                    {order.steam_nickname && ` · ${order.steam_nickname}`}
+                    {order.pubg_uid && ` · UID: ${order.pubg_uid}`}
+                    {isApple && order.apple_region && ` · ${order.apple_region}`}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-semibold">{order.final_amount.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {new Date(order.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Detail */}
+              {expanded && (
+                <div className="border-t border-border/50 p-4 space-y-3 bg-muted/10">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Email</p>
+                      <p className="font-medium break-all">{order.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Тип</p>
+                      <p className="font-medium">{ORDER_TYPE_LABELS[order.order_type ?? 'steam']}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Сумма</p>
+                      <p className="font-medium">{order.amount.toLocaleString('ru-RU')} → {order.final_amount.toLocaleString('ru-RU')} ₽</p>
+                    </div>
+                    {order.steam_nickname && (
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Steam</p>
+                        <p className="font-medium">{order.steam_nickname}</p>
+                      </div>
+                    )}
+                    {order.pubg_uid && (
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">PUBG UID</p>
+                        <p className="font-medium">{order.pubg_uid} ({order.pubg_uc_amount} UC)</p>
+                      </div>
+                    )}
+                    {isApple && order.apple_region && (
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Регион</p>
+                        <p className="font-medium">{order.apple_region}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Apple Gift Card code */}
+                  {isApple && order.apple_gift_card_code && (
+                    <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-3">
+                      <p className="text-[10px] text-green-500 uppercase tracking-wide font-medium mb-1">Код Apple Gift Card</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 text-sm font-mono font-bold text-foreground break-all">
+                          {order.apple_gift_card_code}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0"
+                          onClick={() => copyCode(order.apple_gift_card_code!, order.id)}
+                        >
+                          {copied === order.id ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {isApple && order.status === 'completed' && !order.apple_gift_card_code && (
+                    <p className="text-xs text-muted-foreground italic">Код Apple не найден в ответе провайдера</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {orders.length === 0 && (
+          <p className="text-center text-muted-foreground py-8 text-sm">Заказы не найдены</p>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            {page} / {totalPages}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main admin page
 // ---------------------------------------------------------------------------
 
@@ -593,7 +838,7 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [bootstrapping, setBootstrapping] = useState(true);
-  const [tab, setTab] = useState<'banners' | 'forms'>('banners');
+  const [tab, setTab] = useState<'orders' | 'banners' | 'forms'>('orders');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -637,6 +882,7 @@ export default function AdminPage() {
   }
 
   const TABS = [
+    { key: 'orders' as const, label: 'Заказы' },
     { key: 'banners' as const, label: 'Баннеры' },
     { key: 'forms' as const, label: 'Формы' },
   ];
@@ -678,6 +924,7 @@ export default function AdminPage() {
           ))}
         </div>
 
+        {tab === 'orders' && <OrdersTab />}
         {tab === 'banners' && <BannersTab />}
         {tab === 'forms' && <FormSettingsTab />}
       </main>
