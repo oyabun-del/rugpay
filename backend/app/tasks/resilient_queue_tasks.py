@@ -47,12 +47,37 @@ async def _process_payment_event_async(order_id: int, payment_status: str, payme
 
 
 def _delete_guest_user_sync(user_id: int) -> None:
+    from app.models.order import OrderStatus
+
     session = SyncSession()
     try:
         user = session.query(User).filter(User.id == user_id).first()
         if not user or not user.email.endswith("@guest.gamecover.local"):
             return
 
+        # Never delete orders that have been paid, are being processed, or completed.
+        # These represent real financial transactions and must be preserved.
+        KEEP_STATUSES = (
+            OrderStatus.PAID,
+            OrderStatus.PROCESSING,
+            OrderStatus.COMPLETED,
+        )
+
+        important_orders = session.query(Order.id).filter(
+            Order.user_id == user_id,
+            Order.status.in_(KEEP_STATUSES),
+        ).count()
+
+        if important_orders > 0:
+            # Guest has active/completed orders — keep the user and all orders.
+            logger.info(
+                "Skipping guest cleanup — user has important orders",
+                user_id=user_id,
+                important_orders=important_orders,
+            )
+            return
+
+        # Only delete throwaway orders (PENDING, FAILED, CANCELLED, REFUNDED)
         order_rows = session.query(Order.id).filter(Order.user_id == user_id).all()
         order_ids = [row[0] for row in order_rows]
         if order_ids:
