@@ -45,7 +45,7 @@ export function TopupForm() {
   const [promocode, setPromocode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [promoApplied, setPromoApplied] = useState(false);
-  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [promoDiscountAmount, setPromoDiscountAmount] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -150,7 +150,7 @@ export function TopupForm() {
       ? pricingConfig.commission_percent_up_to_threshold
       : pricingConfig.commission_percent_above_threshold;
   const commissionRate = commissionPercentLabel / 100;
-  const commission = numAmount * commissionRate * (1 - promoDiscount);
+  const commission = numAmount * commissionRate;
   const finalAmount = numAmount + commission;
   const steamDiscountPercent = Math.max(pricingConfig.steam_discount_percent, 0);
   const pubgDiscountPercent = Math.max(pricingConfig.pubg_discount_percent, 0);
@@ -192,32 +192,57 @@ export function TopupForm() {
   const emphasizedInputClass =
     'bg-background/60 border-2 border-primary/25 font-semibold placeholder:font-medium placeholder:text-muted-foreground/80 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30';
 
+  const getCurrentTotalForPromo = (): number => {
+    if (formMode === 'pubg') {
+      const pkg = pubgPackages.find((p) => p.uc === selectedPubgUc);
+      if (!pkg?.price_rub) return 0;
+      return Math.round(pkg.price_rub * pubgDiscountMultiplier);
+    }
+    return numAmount + commission;
+  };
+
   const handleApplyPromo = async () => {
-    if (!promocode.trim()) return;
+    const code = promocode.trim();
+    if (!code) return;
+    const total = getCurrentTotalForPromo();
+    if (total <= 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description:
+          formMode === 'pubg'
+            ? 'Сначала выберите пакет UC'
+            : 'Сначала укажите сумму пополнения',
+        duration: 3500,
+      });
+      return;
+    }
 
     try {
-      const { data } = await ordersApi.validatePromocode(promocode.trim());
+      const { data } = await ordersApi.validatePromocode(code, total);
       if (data.valid) {
         setPromoApplied(true);
-        setPromoDiscount(data.discount || 0);
+        setPromoDiscountAmount(data.discount_amount || 0);
         toast({
           title: 'Промокод применен',
-          description: 'Скидка на комиссию успешно активирована.',
+          description: data.discount_amount
+            ? `Скидка: ${data.discount_amount.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽`
+            : 'Промокод успешно применён',
           duration: 3000,
         });
       } else {
         setPromoApplied(false);
-        setPromoDiscount(0);
+        setPromoDiscountAmount(0);
         toast({
           variant: 'destructive',
           title: 'Ошибка',
-          description: 'Промокод недействителен',
+          description: data.message || 'Промокод недействителен',
           duration: 3500,
         });
       }
     } catch {
       setPromoApplied(false);
-      setPromoDiscount(0);
+      setPromoDiscountAmount(0);
       toast({
         variant: 'destructive',
         title: 'Ошибка',
@@ -591,7 +616,7 @@ export function TopupForm() {
                 onChange={(e) => {
                   setPromocode(e.target.value);
                   setPromoApplied(false);
-                  setPromoDiscount(0);
+                  setPromoDiscountAmount(0);
                 }}
                 className={emphasizedInputClass}
                 disabled={promoApplied}
@@ -620,7 +645,9 @@ export function TopupForm() {
             const pkg = pubgPackages.find((p) => p.uc === selectedPubgUc);
             if (!pkg?.price_rub) return null;
             const basePrice = pkg.price_rub;
-            const finalPrice = Math.round(basePrice * pubgDiscountMultiplier);
+            const priceAfterFormDiscount = Math.round(basePrice * pubgDiscountMultiplier);
+            const promoOff = promoApplied ? Math.min(promoDiscountAmount, priceAfterFormDiscount) : 0;
+            const finalPrice = Math.max(priceAfterFormDiscount - promoOff, 0);
             return (
               <div className="rounded-2xl glass-subtle px-5 py-4 space-y-3">
                 <div className="flex justify-between text-sm">
@@ -638,6 +665,14 @@ export function TopupForm() {
                     </span>
                   </div>
                 )}
+                {promoOff > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Промокод</span>
+                    <span className="text-green-500 font-medium">
+                      -{promoOff.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                    </span>
+                  </div>
+                )}
                 <div className="border-t border-white/[0.08] pt-3 flex justify-between items-center">
                   <span className="font-semibold">Итого к оплате</span>
                     <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 text-primary-foreground font-extrabold text-xl tracking-tight shadow-[0_2px_16px_-2px_oklch(0.65_0.24_270_/_0.4)]">
@@ -648,29 +683,40 @@ export function TopupForm() {
             );
           })()}
 
-          {formMode === 'steam' && numAmount > 0 && (
-            <div className="rounded-2xl glass-subtle px-5 py-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Сумма пополнения</span>
-                <span>{numAmount.toFixed(2)} RUB</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground flex items-center gap-1">
-                  Скидка
-                  {steamDiscountPercent > 0 && (
-                    <span className="text-green-500 font-medium">-{steamDiscountPercent}%</span>
-                  )}
-                </span>
-                <span className="text-green-500">-{(finalAmount * (steamDiscountPercent / 100)).toFixed(2)} RUB</span>
-              </div>
-              <div className="border-t border-white/[0.08] pt-2 flex justify-between items-center font-semibold">
-                <span>Итого</span>
-                  <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 text-primary-foreground font-extrabold text-xl tracking-tight shadow-[0_2px_16px_-2px_oklch(0.65_0.24_270_/_0.4)]">
-                    {(finalAmount * steamDiscountMultiplier).toFixed(2)} RUB
+          {formMode === 'steam' && numAmount > 0 && (() => {
+            const afterFormDiscount = finalAmount * steamDiscountMultiplier;
+            const promoOff = promoApplied ? Math.min(promoDiscountAmount, afterFormDiscount) : 0;
+            const totalToPay = Math.max(afterFormDiscount - promoOff, 0);
+            return (
+              <div className="rounded-2xl glass-subtle px-5 py-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Сумма пополнения</span>
+                  <span>{numAmount.toFixed(2)} RUB</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    Скидка
+                    {steamDiscountPercent > 0 && (
+                      <span className="text-green-500 font-medium">-{steamDiscountPercent}%</span>
+                    )}
                   </span>
+                  <span className="text-green-500">-{(finalAmount * (steamDiscountPercent / 100)).toFixed(2)} RUB</span>
+                </div>
+                {promoOff > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Промокод</span>
+                    <span className="text-green-500 font-medium">-{promoOff.toFixed(2)} RUB</span>
+                  </div>
+                )}
+                <div className="border-t border-white/[0.08] pt-2 flex justify-between items-center font-semibold">
+                  <span>Итого</span>
+                    <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 text-primary-foreground font-extrabold text-xl tracking-tight shadow-[0_2px_16px_-2px_oklch(0.65_0.24_270_/_0.4)]">
+                      {totalToPay.toFixed(2)} RUB
+                    </span>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           <Button
             type="submit"

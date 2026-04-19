@@ -99,8 +99,14 @@ async def create_promocode(
     admin_id: int = Depends(get_current_admin_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a new promo code (admin only)"""
+    """Create a new promo code (admin only)."""
     repo = PromocodeRepository(db)
+    existing = await repo.get_by_code(data.code)
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Promo code with this code already exists",
+        )
     promocode = await repo.create(
         code=data.code,
         discount_type=data.discount_type,
@@ -125,15 +131,40 @@ async def get_all_promocodes(
 
 
 @router.delete("/promocode/{promocode_id}")
-async def deactivate_promocode(
+async def delete_promocode(
     promocode_id: int,
     admin_id: int = Depends(get_current_admin_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Deactivate a promo code (admin only)"""
+    """Delete a promo code permanently (admin only)."""
     repo = PromocodeRepository(db)
-    await repo.deactivate(promocode_id)
+    deleted = await repo.delete(promocode_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Promo code not found",
+        )
     return {"status": "ok"}
+
+
+@router.patch("/promocode/{promocode_id}/toggle", response_model=PromocodeResponse)
+async def toggle_promocode(
+    promocode_id: int,
+    admin_id: int = Depends(get_current_admin_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Toggle promo code active state (admin only)."""
+    repo = PromocodeRepository(db)
+    promocode = await repo.get_by_id(promocode_id)
+    if not promocode:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Promo code not found",
+        )
+    promocode.is_active = not promocode.is_active
+    await db.commit()
+    await db.refresh(promocode)
+    return PromocodeResponse.model_validate(promocode)
 
 
 @router.get("/stats", response_model=AdminStats)

@@ -2,15 +2,30 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { appleApi, settingsApi, isTrustedPaymentUrl, type AppleRegion, type AppleVoucher } from '@/lib/api';
+import { appleApi, ordersApi, settingsApi, isTrustedPaymentUrl, type AppleRegion, type AppleVoucher } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { Header } from '@/components/landing/header';
 import { Footer } from '@/components/landing/footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Mail, AlertTriangle, X, ChevronDown, Tag, Smartphone, LogIn, Gift, CreditCard } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Loader2,
+  Mail,
+  AlertTriangle,
+  X,
+  ChevronDown,
+  Tag,
+  Smartphone,
+  LogIn,
+  Gift,
+  CreditCard,
+  Ticket,
+  CheckCircle2,
+} from 'lucide-react';
 import Image from 'next/image';
 
 const PRIORITY_REGIONS = ['RU', 'US', 'TR'];
@@ -278,6 +293,7 @@ function VoucherCard({
 export default function ApplePage() {
   const router = useRouter();
   const { setSession } = useAuth();
+  const { toast } = useToast();
 
   const [showWarning, setShowWarning] = useState(false);
   const [formDisabled, setFormDisabled] = useState(false);
@@ -288,6 +304,10 @@ export default function ApplePage() {
   const [email, setEmail] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('');
   const [selectedVoucher, setSelectedVoucher] = useState('');
+
+  const [promocode, setPromocode] = useState('');
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [promoDiscountAmount, setPromoDiscountAmount] = useState(0);
 
   const [loadingRegions, setLoadingRegions] = useState(true);
   const [loadingVouchers, setLoadingVouchers] = useState(false);
@@ -322,7 +342,42 @@ export default function ApplePage() {
       .finally(() => setLoadingVouchers(false));
   }, [selectedRegion]);
 
+  // Reset promocode when selection changes — discount is tied to a specific voucher price.
+  useEffect(() => {
+    setPromoApplied(false);
+    setPromoDiscountAmount(0);
+  }, [selectedRegion, selectedVoucher]);
+
   const selectedVoucherData = vouchers.find((v) => v.id === selectedVoucher);
+
+  const handleApplyPromo = async () => {
+    const code = promocode.trim();
+    if (!code || !selectedVoucherData) return;
+    try {
+      const { data } = await ordersApi.validatePromocode(code, selectedVoucherData.discountedPrice);
+      if (data.valid) {
+        const amount = data.discount_amount ?? 0;
+        // Cap so the final amount never drops below Wata DG min_price floor.
+        const maxAllowed = Math.max(0, selectedVoucherData.discountedPrice - selectedVoucherData.minPrice);
+        const capped = Math.min(amount, maxAllowed);
+        setPromoDiscountAmount(capped);
+        setPromoApplied(true);
+        toast({ title: 'Промокод применён', description: `Скидка ${capped.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽` });
+      } else {
+        setPromoApplied(false);
+        setPromoDiscountAmount(0);
+        toast({ title: 'Промокод недействителен', description: data.message ?? 'Проверьте код', variant: 'destructive' });
+      }
+    } catch {
+      setPromoApplied(false);
+      setPromoDiscountAmount(0);
+      toast({ title: 'Ошибка', description: 'Не удалось проверить промокод', variant: 'destructive' });
+    }
+  };
+
+  const finalTotal = selectedVoucherData
+    ? Math.max(selectedVoucherData.discountedPrice - promoDiscountAmount, selectedVoucherData.minPrice)
+    : 0;
 
   // Extract region code from selected region
   const selectedRegionData = regions.find((r) => r.id === selectedRegion);
@@ -341,6 +396,7 @@ export default function ApplePage() {
         voucher_id: selectedVoucherData.id,
         min_price: selectedVoucherData.minPrice,
         region: regionCode,
+        promocode: promoApplied ? promocode.trim() : undefined,
       });
       // Set guest session if returned
       if (data.guest_access_token && data.guest_user) {
@@ -480,6 +536,55 @@ export default function ApplePage() {
               </CardContent>
             </Card>
 
+            {/* Promocode */}
+            {selectedVoucherData && (
+              <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
+                <CardContent className="pt-6 space-y-3">
+                  <Label htmlFor="promocode" className="flex items-center gap-2 text-base font-semibold">
+                    <Ticket className="h-4 w-4 text-primary" />
+                    Промокод
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="promocode"
+                      type="text"
+                      placeholder="Введите промокод"
+                      value={promocode}
+                      onChange={(e) => {
+                        setPromocode(e.target.value);
+                        if (promoApplied) {
+                          setPromoApplied(false);
+                          setPromoDiscountAmount(0);
+                        }
+                      }}
+                      disabled={promoApplied}
+                      className="bg-input/50"
+                    />
+                    <Button
+                      type="button"
+                      variant={promoApplied ? 'secondary' : 'default'}
+                      onClick={handleApplyPromo}
+                      disabled={!promocode.trim() || promoApplied}
+                    >
+                      {promoApplied ? (
+                        <>
+                          <CheckCircle2 className="mr-1 h-4 w-4" />
+                          Применён
+                        </>
+                      ) : (
+                        'Применить'
+                      )}
+                    </Button>
+                  </div>
+                  {promoApplied && (
+                    <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-green-500/20">
+                      Скидка -{promoDiscountAmount.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                    </Badge>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Summary + submit */}
             <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
               <CardContent className="pt-6 space-y-4">
@@ -504,10 +609,18 @@ export default function ApplePage() {
                         </span>
                       </div>
                     )}
+                    {promoApplied && promoDiscountAmount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Промокод</span>
+                        <span className="text-green-500 font-medium">
+                          -{promoDiscountAmount.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                        </span>
+                      </div>
+                    )}
                     <div className="border-t border-border/50 pt-3 flex justify-between items-center">
                       <span className="font-semibold">Итого к оплате</span>
                       <span className="inline-flex items-center rounded-xl bg-gradient-to-r from-primary to-primary/80 px-4 py-1.5 text-primary-foreground font-extrabold text-xl tracking-tight shadow-lg shadow-primary/25">
-                        {selectedVoucherData.discountedPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                        {finalTotal.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
                       </span>
                     </div>
                   </div>

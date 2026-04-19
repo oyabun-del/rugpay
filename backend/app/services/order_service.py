@@ -260,11 +260,14 @@ class OrderService:
         commission = amount * (commission_percent / 100)
         discount_amount = 0.0
         
-        # Apply promocode
+        # Apply promocode (discount against the user-facing final amount)
         if promocode:
             is_valid, message, promo = await self.promocode_repo.is_valid(promocode, amount)
             if is_valid and promo:
-                discount_amount = await self.promocode_repo.calculate_discount(promo, amount, commission)
+                final_before_promo = amount + commission
+                discount_amount = await self.promocode_repo.calculate_discount(
+                    promo, final_before_promo, commission,
+                )
         
         # Apply referral balance
         referral_discount = 0.0

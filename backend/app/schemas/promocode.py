@@ -31,7 +31,7 @@ class PromocodeResponse(BaseModel):
 
 class PromocodeApply(BaseModel):
     code: str
-    amount: float = Field(..., gt=0)
+    amount: float = Field(0, ge=0)
 
 
 class PromocodeApplyResponse(BaseModel):

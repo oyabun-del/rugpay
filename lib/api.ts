@@ -101,15 +101,18 @@ export interface AdminOrder extends Order {
   steam_response?: string | null;
 }
 
+export type PromocodeDiscountType = 'percentage' | 'fixed' | 'commission';
+
 export interface Promocode {
   id: number;
   code: string;
-  discount_type: 'percentage' | 'fixed' | 'commission';
+  discount_type: PromocodeDiscountType;
   discount_value: number;
-  max_uses: number;
-  used_count: number;
+  max_uses: number | null;
+  current_uses: number;
   expires_at: string | null;
   is_active: boolean;
+  created_at: string;
 }
 
 export interface ReferralInfo {
@@ -270,11 +273,14 @@ export const ordersApi = {
 
   getPaymentProviders: () => api.get<PaymentProvidersResponse>('/orders/payment-providers'),
 
-  validatePromocode: (code: string) =>
-    api.post<{ valid: boolean; discount?: number; discount_amount?: number; message?: string }>(
-      '/promocode/apply',
-      { code, amount: 0 },
-    ),
+  validatePromocode: (code: string, amount: number = 0) =>
+    api.post<{
+      valid: boolean;
+      discount_type?: PromocodeDiscountType;
+      discount_value?: number;
+      discount_amount?: number;
+      message?: string;
+    }>('/promocode/apply', { code, amount }),
 };
 
 // Payment page: public order info (no auth)
@@ -383,8 +389,13 @@ export const appleApi = {
   getRegions: () => api.get<AppleRegionsResponse>('/apple/regions'),
   getDenominations: (serviceId: string) =>
     api.get<AppleVouchersResponse>(`/apple/denominations/${serviceId}`),
-  createOrder: (data: { email: string; voucher_id: string; min_price: number; region?: string }) =>
-    api.post<AppleOrderResponse>('/apple/create', data),
+  createOrder: (data: {
+    email: string;
+    voucher_id: string;
+    min_price: number;
+    region?: string;
+    promocode?: string;
+  }) => api.post<AppleOrderResponse>('/apple/create', data),
 };
 
 // Promocodes API
@@ -425,15 +436,19 @@ export const adminApi = {
   
   createPromocode: (data: {
     code: string;
-    discount_type: string;
+    discount_type: PromocodeDiscountType;
     discount_value: number;
-    max_uses: number;
-    expires_at?: string;
+    max_uses?: number | null;
+    min_order_amount?: number | null;
+    max_discount?: number | null;
+    expires_at?: string | null;
   }) => api.post<Promocode>('/admin/promocode/create', data),
-  
-  getPromocodes: () => api.get<{ promocodes: Promocode[] }>('/admin/promocodes'),
-  
-  togglePromocode: (id: number) => api.patch(`/admin/promocode/${id}/toggle`),
+
+  getPromocodes: () => api.get<Promocode[]>('/admin/promocodes'),
+
+  togglePromocode: (id: number) => api.patch<Promocode>(`/admin/promocode/${id}/toggle`),
+
+  deletePromocode: (id: number) => api.delete(`/admin/promocode/${id}`),
 
   getBannerSlides: () => api.get<BannerSlide[]>('/admin/banner/slides'),
 

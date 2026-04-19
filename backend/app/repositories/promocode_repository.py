@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 from typing import Optional, List
 from app.models.promocode import Promocode, DiscountType
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class PromocodeRepository:
@@ -60,8 +60,12 @@ class PromocodeRepository:
         if not promocode.is_active:
             return False, "Promo code is inactive", None
         
-        if promocode.expires_at and promocode.expires_at < datetime.utcnow():
-            return False, "Promo code has expired", None
+        if promocode.expires_at:
+            expires_at = promocode.expires_at
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at < datetime.now(timezone.utc):
+                return False, "Promo code has expired", None
         
         if promocode.max_uses and promocode.current_uses >= promocode.max_uses:
             return False, "Promo code has reached maximum uses", None
@@ -71,22 +75,31 @@ class PromocodeRepository:
         
         return True, "Valid", promocode
     
-    async def calculate_discount(self, promocode: Promocode, amount: float, commission: float) -> float:
+    async def calculate_discount(
+        self,
+        promocode: Promocode,
+        final_amount: float,
+        commission: float,
+    ) -> float:
+        """Compute promocode discount.
+
+        PERCENTAGE applies to `final_amount` (the amount the user would pay before
+        the promo), FIXED subtracts a fixed sum, COMMISSION discounts the commission
+        portion only. Result is clamped to [0, final_amount] and `max_discount`.
+        """
         if promocode.discount_type == DiscountType.PERCENTAGE:
-            discount = amount * (promocode.discount_value / 100)
+            discount = final_amount * (promocode.discount_value / 100)
         elif promocode.discount_type == DiscountType.FIXED:
             discount = promocode.discount_value
         elif promocode.discount_type == DiscountType.COMMISSION:
-            # Reduce commission percentage
             discount = commission * (promocode.discount_value / 100)
         else:
             discount = 0.0
-        
-        # Apply max discount limit
+
         if promocode.max_discount:
             discount = min(discount, promocode.max_discount)
-        
-        return discount
+
+        return max(0.0, min(discount, final_amount))
     
     async def get_all(self, skip: int = 0, limit: int = 100) -> List[Promocode]:
         result = await self.db.execute(
@@ -101,3 +114,22 @@ class PromocodeRepository:
             await self.db.commit()
             await self.db.refresh(promocode)
         return promocode
+
+    async def delete(self, promocode_id: int) -> bool:
+        """Hard-delete a promocode. Returns True if deleted, False if not found.
+
+        Detaches the promocode from any orders (sets their `promocode_id` to NULL)
+        before deletion so historical orders remain intact.
+        """
+        promocode = await self.get_by_id(promocode_id)
+        if not promocode:
+            return False
+        from app.models.order import Order
+        await self.db.execute(
+            Order.__table__.update()
+            .where(Order.promocode_id == promocode_id)
+            .values(promocode_id=None)
+        )
+        await self.db.delete(promocode)
+        await self.db.commit()
+        return True

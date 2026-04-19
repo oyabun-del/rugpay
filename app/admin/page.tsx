@@ -2,7 +2,16 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
-import { adminApi, authApi, type AdminOrder, type BannerSlide, type FormSettings, type User } from '@/lib/api';
+import {
+  adminApi,
+  authApi,
+  type AdminOrder,
+  type BannerSlide,
+  type FormSettings,
+  type Promocode,
+  type PromocodeDiscountType,
+  type User,
+} from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +37,8 @@ import {
   Copy,
   ChevronLeft,
   ChevronRight,
+  Ticket,
+  Percent,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -831,6 +842,365 @@ function OrdersTab() {
 }
 
 // ---------------------------------------------------------------------------
+// Promocodes tab
+// ---------------------------------------------------------------------------
+
+const DISCOUNT_TYPE_LABELS: Record<PromocodeDiscountType, string> = {
+  percentage: '% от суммы',
+  fixed: 'Фикс. сумма',
+  commission: '% от комиссии',
+};
+
+function formatDiscount(promo: Promocode): string {
+  if (promo.discount_type === 'fixed') {
+    return `-${promo.discount_value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽`;
+  }
+  return `-${promo.discount_value}%`;
+}
+
+function AddPromocodeForm({ onAdd }: { onAdd: (promo: Promocode) => void }) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({
+    code: '',
+    discount_type: 'percentage' as PromocodeDiscountType,
+    discount_value: '',
+    max_uses: '',
+    min_order_amount: '',
+    max_discount: '',
+    expires_at: '',
+  });
+
+  const reset = () => {
+    setForm({
+      code: '',
+      discount_type: 'percentage',
+      discount_value: '',
+      max_uses: '',
+      min_order_amount: '',
+      max_discount: '',
+      expires_at: '',
+    });
+    setError('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    const value = parseFloat(form.discount_value);
+    if (!form.code.trim() || Number.isNaN(value) || value <= 0) {
+      setError('Укажите код и положительное значение скидки');
+      return;
+    }
+    if (form.discount_type !== 'fixed' && value > 100) {
+      setError('Процент скидки не может превышать 100');
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        code: form.code.trim().toUpperCase(),
+        discount_type: form.discount_type,
+        discount_value: value,
+        max_uses: form.max_uses ? parseInt(form.max_uses, 10) : null,
+        min_order_amount: form.min_order_amount ? parseFloat(form.min_order_amount) : null,
+        max_discount: form.max_discount ? parseFloat(form.max_discount) : null,
+        expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+      };
+      const { data } = await adminApi.createPromocode(payload);
+      onAdd(data);
+      reset();
+      setOpen(false);
+    } catch (err: unknown) {
+      const detail =
+        err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+          : undefined;
+      setError(typeof detail === 'string' ? detail : 'Не удалось создать промокод');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <Button variant="outline" className="w-full" onClick={() => setOpen(true)}>
+        <Plus className="h-4 w-4 mr-2" /> Добавить промокод
+      </Button>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="border border-primary/40 rounded-xl bg-card/60 p-4 space-y-3"
+    >
+      <p className="font-semibold text-sm">Новый промокод</p>
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs">Код *</Label>
+          <Input
+            value={form.code}
+            onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
+            className="h-8 text-sm bg-input/50"
+            placeholder="SUMMER2026"
+            required
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Тип скидки *</Label>
+          <select
+            value={form.discount_type}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, discount_type: e.target.value as PromocodeDiscountType }))
+            }
+            className="h-8 w-full rounded-md border border-input bg-input/50 px-2 text-sm"
+          >
+            <option value="percentage">Процент от суммы</option>
+            <option value="fixed">Фиксированная сумма (₽)</option>
+            <option value="commission">Процент от комиссии</option>
+          </select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">
+            Размер скидки * {form.discount_type === 'fixed' ? '(₽)' : '(%)'}
+          </Label>
+          <Input
+            type="number"
+            step={form.discount_type === 'fixed' ? '1' : '0.1'}
+            min="0"
+            value={form.discount_value}
+            onChange={(e) => setForm((f) => ({ ...f, discount_value: e.target.value }))}
+            className="h-8 text-sm bg-input/50"
+            required
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Макс. использований</Label>
+          <Input
+            type="number"
+            min="1"
+            value={form.max_uses}
+            onChange={(e) => setForm((f) => ({ ...f, max_uses: e.target.value }))}
+            className="h-8 text-sm bg-input/50"
+            placeholder="Без лимита"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Мин. сумма заказа (₽)</Label>
+          <Input
+            type="number"
+            min="0"
+            value={form.min_order_amount}
+            onChange={(e) => setForm((f) => ({ ...f, min_order_amount: e.target.value }))}
+            className="h-8 text-sm bg-input/50"
+            placeholder="Нет"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Макс. размер скидки (₽)</Label>
+          <Input
+            type="number"
+            min="0"
+            value={form.max_discount}
+            onChange={(e) => setForm((f) => ({ ...f, max_discount: e.target.value }))}
+            className="h-8 text-sm bg-input/50"
+            placeholder="Нет"
+          />
+        </div>
+        <div className="space-y-1 sm:col-span-2">
+          <Label className="text-xs">Действителен до</Label>
+          <Input
+            type="datetime-local"
+            value={form.expires_at}
+            onChange={(e) => setForm((f) => ({ ...f, expires_at: e.target.value }))}
+            className="h-8 text-sm bg-input/50"
+          />
+        </div>
+      </div>
+
+      {error && <p className="text-xs text-destructive">{error}</p>}
+
+      <div className="flex items-center justify-end gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            reset();
+            setOpen(false);
+          }}
+          disabled={saving}
+        >
+          <X className="h-4 w-4 mr-1" /> Отмена
+        </Button>
+        <Button type="submit" size="sm" disabled={saving}>
+          {saving ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              <Plus className="h-4 w-4 mr-1" /> Добавить
+            </>
+          )}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function PromocodeRow({
+  promo,
+  onDelete,
+  onToggle,
+}: {
+  promo: Promocode;
+  onDelete: (id: number) => void;
+  onToggle: (id: number) => void;
+}) {
+  const expiresAt = promo.expires_at ? new Date(promo.expires_at) : null;
+  const expired = expiresAt ? expiresAt.getTime() < Date.now() : false;
+  const usesLimitReached =
+    promo.max_uses !== null && promo.max_uses !== undefined && promo.current_uses >= promo.max_uses;
+  const effectivelyInactive = !promo.is_active || expired || usesLimitReached;
+
+  return (
+    <div
+      className={`flex items-center gap-3 p-3 border border-border/50 rounded-xl bg-card/60 ${
+        effectivelyInactive ? 'opacity-70' : ''
+      }`}
+    >
+      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 shrink-0">
+        <Percent className="h-4 w-4 text-primary" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-mono font-bold text-sm">{promo.code}</span>
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-green-500/15 text-green-500">
+            {formatDiscount(promo)}
+          </span>
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+            {DISCOUNT_TYPE_LABELS[promo.discount_type]}
+          </span>
+          {!promo.is_active && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+              Выключен
+            </span>
+          )}
+          {expired && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-500/15 text-red-500">
+              Истёк
+            </span>
+          )}
+          {usesLimitReached && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-500/15 text-red-500">
+              Лимит использований
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground truncate">
+          Использований: {promo.current_uses}
+          {promo.max_uses != null ? ` / ${promo.max_uses}` : ' (без лимита)'}
+          {expiresAt ? ` · до ${expiresAt.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })}` : ''}
+        </p>
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <Switch
+          checked={promo.is_active}
+          onCheckedChange={() => onToggle(promo.id)}
+          aria-label={promo.is_active ? 'Выключить промокод' : 'Включить промокод'}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-destructive hover:text-destructive"
+          onClick={() => onDelete(promo.id)}
+          aria-label="Удалить промокод"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function PromocodesTab() {
+  const [promos, setPromos] = useState<Promocode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    try {
+      const { data } = await adminApi.getPromocodes();
+      setPromos(data);
+    } catch {
+      setError('Не удалось загрузить промокоды');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Удалить промокод? Это действие необратимо.')) return;
+    try {
+      await adminApi.deletePromocode(id);
+      setPromos((prev) => prev.filter((p) => p.id !== id));
+    } catch {
+      setError('Не удалось удалить промокод');
+    }
+  };
+
+  const handleToggle = async (id: number) => {
+    try {
+      const { data } = await adminApi.togglePromocode(id);
+      setPromos((prev) => prev.map((p) => (p.id === id ? data : p)));
+    } catch {
+      setError('Не удалось изменить промокод');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+          <Ticket className="h-4 w-4 text-primary" /> {promos.length} промокод(ов)
+        </p>
+      </div>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      <div className="space-y-2">
+        {promos.map((promo) => (
+          <PromocodeRow
+            key={promo.id}
+            promo={promo}
+            onDelete={handleDelete}
+            onToggle={handleToggle}
+          />
+        ))}
+        {promos.length === 0 && (
+          <p className="text-center text-muted-foreground py-8 text-sm">Промокоды не созданы</p>
+        )}
+      </div>
+
+      <AddPromocodeForm onAdd={(p) => setPromos((prev) => [p, ...prev])} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main admin page
 // ---------------------------------------------------------------------------
 
@@ -838,7 +1208,7 @@ export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [bootstrapping, setBootstrapping] = useState(true);
-  const [tab, setTab] = useState<'orders' | 'banners' | 'forms'>('orders');
+  const [tab, setTab] = useState<'orders' | 'banners' | 'forms' | 'promocodes'>('orders');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -885,6 +1255,7 @@ export default function AdminPage() {
     { key: 'orders' as const, label: 'Заказы' },
     { key: 'banners' as const, label: 'Баннеры' },
     { key: 'forms' as const, label: 'Формы' },
+    { key: 'promocodes' as const, label: 'Промокоды' },
   ];
 
   return (
@@ -927,6 +1298,7 @@ export default function AdminPage() {
         {tab === 'orders' && <OrdersTab />}
         {tab === 'banners' && <BannersTab />}
         {tab === 'forms' && <FormSettingsTab />}
+        {tab === 'promocodes' && <PromocodesTab />}
       </main>
     </div>
   );

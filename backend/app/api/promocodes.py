@@ -24,10 +24,14 @@ async def apply_promocode(
             message=message,
         )
     
-    # Calculate discount using current commission rules.
+    # Calculate discount against the amount the user would actually pay
+    # (top-up amount + commission), which matches how it is deducted at checkout.
     order_service = OrderService(db)
     commission = order_service.calculate_commission(data.amount)
-    discount_amount = await repo.calculate_discount(promocode, data.amount, commission)
+    final_before_promo = data.amount + commission
+    discount_amount = await repo.calculate_discount(
+        promocode, final_before_promo, commission,
+    )
     
     return PromocodeApplyResponse(
         valid=True,

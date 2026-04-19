@@ -9,6 +9,7 @@ from app.core.security import get_optional_current_user_id, decode_access_token
 from app.core.logging import get_logger
 from app.repositories.order_repository import OrderRepository
 from app.repositories.user_repository import UserRepository
+from app.repositories.promocode_repository import PromocodeRepository
 from app.services.auth_service import AuthService
 from app.services.wata_voucher_service import WataVoucherService
 from app.models.order import OrderType, OrderStatus
@@ -57,6 +58,7 @@ class AppleOrderCreate(BaseModel):
     voucher_id: str
     min_price: float
     region: str = ""  # region code for display, e.g. "US"
+    promocode: Optional[str] = None
 
 
 @router.post("/create", response_model=CreateOrderResponse)
@@ -126,6 +128,22 @@ async def create_apple_order(
     discounted_price = voucher_service.apply_discount(final_price, data.min_price)
     commission = round(discounted_price - data.min_price, 2)
 
+    # --- Apply promocode (discount against the final payable amount) ---
+    # Wata DG requires charging at least `min_price`, so the promo discount is
+    # capped so the final amount never goes below that floor.
+    promocode_id = None
+    promo_discount = 0.0
+    if data.promocode:
+        promo_repo = PromocodeRepository(db)
+        is_valid, _, promo = await promo_repo.is_valid(data.promocode, discounted_price)
+        if is_valid and promo:
+            raw_discount = await promo_repo.calculate_discount(
+                promo, discounted_price, max(commission, 0),
+            )
+            promo_discount = max(0.0, min(raw_discount, discounted_price - data.min_price))
+            promocode_id = promo.id
+    final_after_promo = round(max(discounted_price - promo_discount, data.min_price), 2)
+
     # --- Save order to DB ---
     order_repo = OrderRepository(db)
     order = await order_repo.create(
@@ -134,9 +152,11 @@ async def create_apple_order(
         email=data.email,
         amount=data.min_price,
         commission=max(commission, 0),
-        final_amount=discounted_price,
+        discount_amount=round(promo_discount, 2),
+        final_amount=final_after_promo,
         apple_voucher_id=data.voucher_id,
         apple_region=data.region or None,
+        promocode_id=promocode_id,
     )
 
     # --- Create Wata DG voucher order ---
