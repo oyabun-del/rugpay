@@ -102,11 +102,10 @@ def request_apple_voucher(self, order_id: int):
             # Send email separately so failures don't break the success flow
             try:
                 run_async(
-                    email_service.send_order_status_email(
+                    email_service.send_apple_gift_card_email(
                         to_email=order.email,
                         order_id=order_id,
-                        status_text="Выполнен",
-                        details=f"Код Apple Gift Card: {codes_str}",
+                        codes=codes_str,
                     )
                 )
             except Exception as email_err:

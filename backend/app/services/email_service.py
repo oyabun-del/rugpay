@@ -268,6 +268,36 @@ class EmailService:
         )
         await self.send_email(to_email, subject, body, html)
 
+    async def send_apple_gift_card_email(
+        self,
+        to_email: str,
+        order_id: int,
+        codes: str,
+    ) -> None:
+        subject = f"Ваш код Apple Gift Card — заказ #{order_id}"
+        body = (
+            f"Ваш заказ #{order_id} выполнен!\n\n"
+            f"Код Apple Gift Card: {codes}\n\n"
+            "Как использовать код:\n"
+            "1. Откройте приложение App Store.\n"
+            "2. Коснитесь кнопки входа или своего фото.\n"
+            "3. Нажмите «Погасить подарочную карту или код».\n"
+            "4. Нажмите «Использовать камеру» или «Ввести код вручную».\n"
+            "5. Нажмите «Ввести код».\n"
+        )
+        frontend = (settings.FRONTEND_URL or "").rstrip("/") or "https://rugpay.ru"
+        html = self._render_html_template(
+            "apple-gift-card.html",
+            title=subject,
+            preheader=f"Код Apple Gift Card — заказ #{order_id}",
+            heading=f"Заказ #{order_id}",
+            codes=codes,
+            action_text="Открыть сайт",
+            action_url=frontend,
+            footer_note="Если у вас есть вопросы, ответьте на это письмо.",
+        )
+        await self.send_email(to_email, subject, body, html)
+
     async def send_password_reset_email(
         self,
         to_email: str,
